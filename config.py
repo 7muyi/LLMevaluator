@@ -24,7 +24,7 @@ class ProConfig(Config):
     HOSTNAME = "127.0.0.1"
 
 
-config = {
+configs = {
     "development": DevConfig,
     "production": ProConfig,
     "default": Config,
