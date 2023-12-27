@@ -1,0 +1,200 @@
+{% extends "base.html" %}
+
+{% block style %}
+#header {
+    display: flex;
+    flex-direction: column-reverse;
+    width: 100%;
+    height: 15%;
+    border-bottom: 1px solid #ccced1;
+    font-family: monospace;
+    font-size: 30px;
+    font-weight: lighter;
+}
+
+#profile-container {
+    display: flex;
+    
+    width: 100%;
+    height: 75%;
+    margin-top: 1.5%
+}
+
+#profile-content {
+    width: 55%;
+    height: 100%;
+    margin-right: 5%
+}
+
+#profile-img {
+    width: 40%;
+    height: 100%;
+}
+
+#edit {
+    position: relative;
+    bottom: 40px;
+    left: 20px;
+    display: flex;
+    align-items: center;
+    width:70px;
+    height: 30px;
+    border-radius: 6px;
+    border: 1px solid #d0d7de;
+    background-color: #ffffff;
+    font-family: monospace;
+    font-size: 15px;
+}
+
+#edit img{
+    width: 30px;
+}
+
+#warn-msg {
+    background-color: #ffebe9;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    padding: 12px;
+    border: 1px solid #ffc1c0;
+    border-radius: 5px;
+    margin-bottom: 10px;
+    margin-top: 0px;
+    width: 400px;
+    height: 10px;
+    font-family: monospace;
+}
+
+.form-group {
+    display: flex;
+    flex-direction: column;
+    margin-bottom: 16px;
+}
+
+.form-group label {
+    font-family: monospace;
+    font-size: 17px;
+    margin-bottom: 6px;
+}
+
+.form-group input {
+    height: 20px;
+    width: 400px;
+    padding: 5px 10px;
+    border-radius: 6px;
+    border-color: #d0d7de;
+    border-style: solid;
+    border-width: 1px;
+    background-color: #f6f8fa;
+    color: #8c95a2;
+    font-family: monospace;
+    font-size: 15px;
+}
+
+.form-group input:focus {
+    border-color: #0969da;
+}
+
+.form-group p {
+    margin: 5px 0 0 0;
+    color: #7e848c;
+    font-family: monospace;
+    font-size: 13px;
+}
+
+.btn {
+    cursor: pointer;
+    border: none;
+    width: 130px;
+    height: 35px;
+    background-color: #1f883d;
+    border-radius: 7px;
+    font-weight: bolder;
+    font-size: 15px;
+    color: #ffffff;
+}
+
+{% endblock %}
+
+{% block content %}
+<div id="header">
+    <p style="margin: 0 0 0 0;">Personal information</p>
+</div>
+<div id="profile-container">
+    <div id="profile-content">
+        <form method="post">
+            <input type="hidden" name="id" value="{{ user.id }}">
+            <div class="form-group">
+                <label>Name</label>
+                <input type="text" name="username" value="{{ user.username }}">
+            </div>
+            
+            <div class="form-group">
+                <label>Public email</label>
+                <input type="text" name="email" value="{{ user.email }}">
+                <p>After the test is completed, a notification will be sent to your email.</p>
+            </div>
+            
+            <div class="form-group">
+                <label>Old password</label>
+                <input type="password" name="old_password">
+                <p>Make sure that the old password is entered correctly</p>
+            </div>
+            
+            <div class="form-group" style="margin-bottom: 10px;">
+                <label>New password</label>
+                <input type="password" name="new_password">
+                <p>Make sure it's at least 15 characters OR at least 8 characters including a number and a lowercase letter.</p>
+            </div>
+            
+            {% if res and res.code != 0 %}
+            <div id="warn-msg">
+                {{ res.message }}
+            </div>
+            {% endif %}
+            
+            <button type="submit" class="btn">Update profile</button>
+        </form>
+    </div>
+
+    <div id="profile-img">
+        <span>Profile picture</span>
+        <div class="rounded-img" style="margin-top: 20px; width: 50%; cursor: pointer;">
+            <img id="profile-pic" src="{{ url_for('user.uploads_file', filename=user.pic_path) }}" alt="Image" onclick="document.getElementById('fileinput').click();">
+        </div>
+        <input type="file" id="fileinput" style="display: none;" onchange="uploadImage()">
+        <div id="edit" onclick="document.getElementById('fileinput').click();" style="cursor: pointer;">
+            <img src="{{ url_for('static', filename='edit.png')}}">
+            Edit
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block js %}
+<script>
+    var llmsElement = document.getElementById('personal_information');
+    llmsElement.style.backgroundColor = '#f4f5f7';
+
+    function uploadImage() {
+        var file = document.getElementById('fileinput').files[0];
+
+        if (file) {
+            var formData = new FormData();
+            formData.append('image', file);
+            formData.append('id', {{ user.id }});
+            $.ajax({
+                url: '{{ url_for('user.upload_img') }}',
+                type: 'POST',
+                data: formData,
+                contentType: false,
+                processData: false,
+                success: function (response) {
+                    console.log('上传成功:', response);
+                    $('#profile-pic').attr('src', "/user/uploads?filename=" + response);
+                },
+            });
+        }
+    }
+</script>
+{% endblock %}

@@ -8,6 +8,8 @@ class User(db.Model):
     u_id = db.Column(db.Integer, primary_key=True, autoincrement=True)
     u_name = db.Column(db.String(25), unique=True, nullable=False)
     u_password = db.Column(db.String(30), nullable=False)
+    u_email = db.Column(db.String(50), unique=True)
+    u_pic_path = db.Column(db.String(50), default="profile_pics/icon_black.png")
 
 # LLMs table
 class LLMs(db.Model):
