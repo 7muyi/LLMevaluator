@@ -80,7 +80,7 @@
             display: flex;
             flex-direction: column;
             
-            width: 25%;
+            width: 22%;
             height: 100%;
             background-color: #ffffff;
             margin-right: 40px;
@@ -109,10 +109,10 @@
         <div id="sidebar">
             <div id="person-box">
                 <div class="rounded-img">
-                    <img src="../static/icon_black.png">
+                    <img id="person-box-pic" src="{{ url_for('user.uploads_file', filename=user.u_pic_path) }}">
                 </div>
                 <div>
-                    <p style="font-size: 20px; margin-top: 10px;"> {{user.username}} </p>
+                    <p style="font-size: 20px; margin-top: 10px;"> {{user.u_name}} </p>
                 </div>
             </div>
             
@@ -120,36 +120,36 @@
                 <ul style="height: 100%; padding-left: 10px;">
                     <li style="border-bottom: 1px solid #bdc1c5; list-style: none;"></li> 
                     <li id="personal_information" class="ActionListItem">
-                        <a class="ActionListContent" href="">
-                            <img src="../static/person.png" class="octicon-person">
+                        <a class="ActionListContent" href="{{ url_for('user.profile', u_id=user.u_id )}}">
+                            <img src="{{ url_for('static', filename='person.png') }}" class="octicon-person">
                             <span class="option">Personal information</span>
                         </a>
                     </li>
                     <li style="border-bottom: 1px solid #e9ecef; list-style: none;"></li> 
                     <li id="test" class="ActionListItem"">
                         <a class="ActionListContent" href="">
-                            <img src="../static/test.png" class="octicon-person">
+                            <img src="{{ url_for('static', filename='test.png') }}" class="octicon-person">
                             <span class="option">Test</span>
                         </a>
                     </li>
                     <li style="border-bottom: 1px solid #e9ecef; list-style: none;"></li> 
                     <li id="llms" class="ActionListItem">
                         <a class="ActionListContent" href="">
-                            <img src="../static/model.png" class="octicon-person">
+                            <img src="{{ url_for('static', filename='model.png') }}" class="octicon-person">
                             <span class="option">LLMs</span>
                         </a>
                     </li>
                     <li style="border-bottom: 1px solid #e9ecef; list-style: none;"></li> 
                     <li id="prompt_bank" class="ActionListItem">
                         <a class="ActionListContent" href="">
-                            <img src="../static/prompt.png" class="octicon-person">
-                            <span class="option">Prompt bank</span>
+                            <img src="{{ url_for('static', filename='prompt.png') }}" class="octicon-person">
+                            <span class="option">Prompt library</span>
                         </a>
                     </li>
                     <li style="border-bottom: 1px solid #e9ecef; list-style: none;"></li> 
                     <li id="question_bank" class="ActionListItem">
                         <a class="ActionListContent" href="">
-                            <img src="../static/question.png" class="octicon-person">
+                            <img src="{{ url_for('static', filename='question.png') }}" class="octicon-person">
                             <span class="option">Question bank</span>
                         </a>
                     </li>
@@ -158,7 +158,7 @@
             </div>
         </div>
         
-        <div style="width: 75%; height: 100%;">
+        <div style="width: 73%; height: 100%;">
             {% block content %}
             {% endblock %}
         </div>

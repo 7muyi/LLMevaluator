@@ -123,15 +123,15 @@
 <div id="profile-container">
     <div id="profile-content">
         <form method="post">
-            <input type="hidden" name="id" value="{{ user.id }}">
+            <input type="hidden" name="u_id" value="{{ user.u_id }}">
             <div class="form-group">
                 <label>Name</label>
-                <input type="text" name="username" value="{{ user.username }}">
+                <input type="text" name="u_name" value="{{ user.u_name }}">
             </div>
             
             <div class="form-group">
                 <label>Public email</label>
-                <input type="text" name="email" value="{{ user.email }}">
+                <input type="text" name="u_email" value="{{ user.u_email }}">
                 <p>After the test is completed, a notification will be sent to your email.</p>
             </div>
             
@@ -160,7 +160,7 @@
     <div id="profile-img">
         <span>Profile picture</span>
         <div class="rounded-img" style="margin-top: 20px; width: 50%; cursor: pointer;">
-            <img id="profile-pic" src="{{ url_for('user.uploads_file', filename=user.pic_path) }}" alt="Image" onclick="document.getElementById('fileinput').click();">
+            <img id="profile-pic" src="{{ url_for('user.uploads_file', filename=user.u_pic_path) }}" alt="Image" onclick="document.getElementById('fileinput').click();">
         </div>
         <input type="file" id="fileinput" style="display: none;" onchange="uploadImage()">
         <div id="edit" onclick="document.getElementById('fileinput').click();" style="cursor: pointer;">
@@ -182,7 +182,7 @@
         if (file) {
             var formData = new FormData();
             formData.append('image', file);
-            formData.append('id', {{ user.id }});
+            formData.append('u_id', {{ user.u_id }});
             $.ajax({
                 url: '{{ url_for('user.upload_img') }}',
                 type: 'POST',
@@ -192,6 +192,7 @@
                 success: function (response) {
                     console.log('上传成功:', response);
                     $('#profile-pic').attr('src', "/user/uploads?filename=" + response);
+                    $('#person-box-pic').attr('src', "/user/uploads?filename=" + response);
                 },
             });
         }

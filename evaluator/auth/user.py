@@ -21,14 +21,14 @@ def login():
         if user is None or user.u_password != password:
             return render_template("login.html", res=False)
         else:
-            return redirect(url_for("user.profile", id=user.u_id))
+            return redirect(url_for("user.profile", u_id=user.u_id))
     
     return render_template("login.html")
 
 @user.route("/register", methods=["GET", "POST"])
 def register():
     if request.method == "POST":
-        username = request.form["username"]
+        username = request.form["u_name"]
         password1 = request.form["password1"]
         password2 = request.form["password2"]
         
@@ -69,20 +69,13 @@ def uploads_file():
 @user.route("/profile", methods=["GET","POST"])
 def profile():
     if request.method == "POST":
-        u_id = request.form["id"]
-        u_name = request.form["username"]
-        u_email = request.form["email"]
+        u_id = request.form["u_id"]
+        u_name = request.form["u_name"]
+        u_email = request.form["u_email"]
         old_password = request.form.get("old_password", None)
         new_password = request.form.get("new_password", None)
         
         user = User.query.filter_by(u_id=u_id).first()
-        
-        user_info = {
-            "id": user.u_id,
-            "username": user.u_name,
-            "email": user.u_email,
-            "pic_path": user.u_pic_path,
-        }
         
         is_error = False
         
@@ -132,43 +125,51 @@ def profile():
         # Update will not proceed if any of the above conditions is not met.
         if not any(is_error):
             db.session.commit()
-            user_info["username"] = user.u_name
-            user_info["email"] = user.u_email
         else:
             db.session.rollback()
-        return render_template("your_profile.html", user=user_info, res=res)
+        
+        user = {
+            "u_id": user.u_id,
+            "u_name": user.u_name,
+            "u_email": user.u_email,
+            "u_pic_path": user.u_pic_path,
+        }
+        return render_template("your_profile.html", user=user, res=res)
     
-    u_id = request.args.get("id")
+    u_id = request.args.get("u_id")
     user = User.query.filter_by(u_id=u_id).first()
     user = {
-        "id": user.u_id,
-        "username": user.u_name,
-        "email": user.u_email,
-        "pic_path": user.u_pic_path,
+        "u_id": user.u_id,
+        "u_name": user.u_name,
+        "u_email": user.u_email,
+        "u_pic_path": user.u_pic_path,
     }
     return render_template("your_profile.html", user=user)
 
 @user.route("/profile/img", methods=["POST"])
 def upload_img():
+    u_id = request.form["u_id"]
+    user = User.query.filter_by(u_id=u_id).first()
+    
+    rel_pic_dir = os.path.dirname(user.u_pic_path)
+    
     img = request.files.get("image")
-    suffix = img.filename.split(".")[-1]
-    upload_dir = os.path.join(f"evaluator", app.config["UPLOAD_FOLDER"])
-    base_dir = os.path.join(upload_dir, "profile_pics")
-    img_path = os.path.join(base_dir, f"{str(int(time.time()))}.{suffix}")
+    
+    suffix = img.filename.split(".")[-1]  # Extract the file extension of an image.
+    pic_dir = os.path.join(f"evaluator/{app.config['UPLOAD_FOLDER']}", rel_pic_dir)
+    new_img_name = f"{user.u_id}_{str(int(time.time()))}.{suffix}"
+    img_path = os.path.join(pic_dir, new_img_name)
+    
     img.save(img_path)
     
-    u_id = request.form["id"]
+    # Download successfully
     if os.path.exists(img_path):
-        user = User.query.filter_by(u_id=u_id).first()
-        
-        # Extract the file extension of an image.
-        new_img_path = os.path.join(base_dir, f"{user.u_id}.{suffix}")
-        
-        # If it is the default path (u_pic_path is default), rename the image with the u_id.
+        # If it is not the default path, in other words, it already has a profile pict on the server.
+        # Delete old profile pic.
         if user.u_pic_path != "profile_pics/icon_black.png":
-            os.remove(os.path.join(upload_dir, user.u_pic_path))
+            os.remove(os.path.join(f"evaluator/{app.config['UPLOAD_FOLDER']}", user.u_pic_path))
         
-        os.rename(img_path, new_img_path)
-        user.u_pic_path = os.path.join("profile_pics/", f"{user.u_id}.{suffix}")
+        # *: The file separator in Windows is '\', but Flask requires '/'.
+        user.u_pic_path = f"{rel_pic_dir}/{new_img_name}"
         db.session.commit()
     return user.u_pic_path
