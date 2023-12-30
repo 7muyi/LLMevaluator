@@ -29,6 +29,7 @@ class Prompt(db.Model):
     p_name = db.Column(db.String(30), nullable=False)
     p_file_path = db.Column(db.String(100), unique=True, nullable=False)
     p_create_time = db.Column(db.DateTime, default=db.func.now())
+    p_num_row = db.Column(db.Integer)
     u_id = db.Column(db.Integer, db.ForeignKey("user.u_id"))
     
     user = db.relationship("User", backref=db.backref("prompts", lazy=True))
@@ -41,6 +42,7 @@ class Question(db.Model):
     q_name = db.Column(db.String(30), nullable=False)
     q_file_path = db.Column(db.String(100), unique=True, nullable=False)
     q_create_time = db.Column(db.DateTime, default=db.func.now())
+    q_num_row = db.Column(db.Integer)
     u_id = db.Column(db.Integer, db.ForeignKey("user.u_id"))
     
     user = db.relationship("User", backref=db.backref("questions", lazy=True))

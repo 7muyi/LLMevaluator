@@ -1,0 +1,330 @@
+{% extends "base.html" %}
+
+{% block style %}
+
+tr{
+    height:40px;
+    border-bottom: 1px solid #ddd;
+}
+
+#header {
+    display: flex;
+    flex-direction: column-reverse;
+    width: 100%;
+    height: 15%;
+    border-bottom: 1px solid #ccced1;
+    font-family: monospace;
+    font-size: 30px;
+    font-weight: lighter;
+}
+
+#questions-container {
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    margin-top: 1.5%
+}
+
+#question-table {
+    border-collapse: collapse;
+    margin: 5px 0;
+    width: 100%;
+    min-width: 400px;
+}
+
+#question-table thead th {
+    color: #646a73;
+    text-align: left;
+    font-family: monospace;
+    font-size: 18px;
+    font-weight: lighter;
+}
+
+#col1 {
+    width: 30%;
+}
+
+#col2 {
+    width: 20%;
+}
+
+#col3 {
+    width: 35%;
+}
+
+#col4 {
+    width: 15%;
+}
+
+#dis-title {
+    display: flex;
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
+    margin: 15px 0 15px 0;
+}
+
+#dis-title button {
+    cursor: pointer;
+    width: 110px;
+    height: 35px;
+    border: 1.5px solid #1f883d;
+    border-radius: 7px;
+    font-weight: bolder;
+    font-size: 15px;
+    margin: 0 5px 0 5px;
+}
+
+#dis-title p {
+    font-family: monospace;
+    font-size: 18px;
+    font-weight: lighter;
+}
+
+#question-table tbody th{
+    text-align: left;
+    font-family: monospace;
+    font-size: 16px;
+    font-weight: lighter;
+}
+
+#form-edit-box {
+    visibility: hidden;
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    width: 240px;
+    height: 90px;
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    background-color: #ffffff;
+    border: 1px solid #1f883d;
+    border-radius: 6px;
+}
+
+#form-edit {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+#form-edit label {
+    font-family: monospace;
+    font-size: 20px;
+    margin-right: 10px;
+}
+
+#form-edit input {
+    height: 20px;
+    width: 150px;
+    padding: 5px 10px;
+    border-radius: 6px;
+    border-color: #d0d7de;
+    border-style: solid;
+    border-width: 1px;
+    background-color: #f6f8fa;
+    color: #8c95a2;
+    font-family: monospace;
+    font-size: 15px;
+}
+
+#form-edit button {
+    cursor: pointer;
+    width: 110px;
+    height: 35px;
+    border: 1.5px solid #1f883d;
+    border-radius: 7px;
+    background-color: #1f883d;
+    color: #ffffff; 
+    font-weight: bolder;
+    font-size: 15px;
+    margin: 0 5px 0 5px;
+}
+
+.other-op {
+    display: flex;
+    vertical-align: middle;
+    cursor: pointer;
+}
+
+.menu {
+    visibility: hidden;
+    position: absolute;
+    right: 16%;
+    background-color: #ffffff;
+    transform: translateX(40%);
+    border: 1px solid rgba(31, 35, 41, 0.15);
+    border-radius: 6px;
+    height: 60px;
+    width: 80px;
+}
+
+.menu ul {
+    padding: 0 0 0 0;
+    margin: 0 0 0 0;
+}
+
+.menu-li {
+    display: flex;
+    flex-direction: column;
+    height: 50%;
+    width: 100%;
+    align-items: left;
+    list-style: none;
+
+    font-family: monospace;
+    font-size: 15px;
+    font-weight: lighter;
+}
+
+.menu-li:hover {
+    background-color: #f4f5f7;
+}
+
+.menu-content{
+    margin-left: 5px;
+    margin-right: 5px;
+    display: flex;
+    align-items: center;
+    flex-direction: row;
+    height: 100%;
+    color: #000000;
+}
+
+.menu-content img {
+    width: 15px;
+    padding-right: 8px;
+}
+{% endblock %}
+
+{% block content %}
+<div id="header">
+    <p style="margin: 0 0 0 0;">Question bank</p>
+</div>
+<div id="questions-container">
+    <div id="dis-title">
+        <p style="margin: 0;">Question Template</p>
+        <div>
+            <a href="{{ url_for('question.download', filename='file/question_template.csv') }}" download="question_template.csv" style="text-decoration: none;">
+                <button id="download-btn" style="background-color: #ffffff; color: #1f883d;">Template</button>
+            </a>
+            <button id="upload-btn" style="background-color: #1f883d; color: #ffffff;" onclick="document.getElementById('fileinput').click();">Upload</button>
+            <input type="file" id="fileinput" style="display: none;" onchange="uploadFile()">
+        </div>
+    </div>
+    <table id="question-table">
+        <thead>
+            <tr>
+                {% if questions %}
+                    {% for col in questions[0].keys() %}
+                        {% if col != "q_id" %}
+                        <th id="col{{ loop.index0 }}"> {{ col }} </th>
+                        {% endif %}
+                    {% endfor %}
+                    <th id="col{{ questions[0].keys()|length }}">Operate</th>
+                {% endif %}
+            </tr>
+        </thead>
+        <tbody>
+            {% for question in questions %}
+            <tr>
+                {% for key, value in question.items() %}
+                    {% if key != "q_id" %}
+                    <th style="vertical-align: middle;">
+                        <div style="display: flex; flex-direction: row; vertical-align: middle;">
+                            {% if loop.index0 == 1 %}
+                            <img src="{{ url_for('static', filename='file.png') }}" style="width: 20px; margin-left: 0; margin-right: 5px;">
+                            {% endif %}
+                            {{ value }}
+                        </div>
+                    </th>
+                    {% endif %}
+                {% endfor %}
+                <th style="vertical-align: middle;">
+                    <div class="other-op" onclick="showMenu(this)">
+                        <img src="{{ url_for('static', filename='other.png') }}" style="width: 20px; margin-right: 0;">
+                        <div class="menu">
+                            <ul style="height: 100%;">
+                                <li class="menu-li" onclick="var form = document.getElementById('form-edit-box'); form.style.visibility='visible';form.querySelector('#q_id').value={{ question.q_id }}; form.querySelector('#q_name').value='{{ question.name }}';form.querySelector('#q_name').placeholder='{{ question.name }}'">
+                                    <div class="menu-content">
+                                        <img src="{{ url_for('static', filename='delete.png') }}">
+                                        <span>Edit</span>
+                                    </div>
+                                </li>
+                                <li class="menu-li" onclick="document.getElementById('form-del').submit();">
+                                    <form id="form-del" method="post" class="menu-content" action="{{ url_for('question.delete') }}">
+                                        <input type="hidden" name="q_id" value="{{ question.q_id }}">
+                                        <input type="hidden" name="u_id" value="{{ user.u_id }}">
+                                        <img src="{{ url_for('static', filename='edit_grey.png') }}">
+                                        <span>Delete</span>
+                                    </form>
+                                </li>
+                            </ul>
+                        </div>
+                    </div>
+                </th>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    <div id="form-edit-box">
+        <form id="form-edit" method="post" action="{{ url_for('question.edit') }}">
+            <input id="q_id" type="hidden" name="q_id">
+            <input type="hidden" name="u_id" value="{{ user.u_id }}">
+            <div style="display: flex; flex-direction: row; align-items: center; margin-bottom: 7px;">
+                <label>Name</label>
+                <input id="q_name" type="text" name="q_name">
+            </div>
+            <div style="display: flex; flex-direction: row;">
+                <button type="submit">Update</button>
+                <button type="button" onclick="document.getElementById('form-edit-box').style.visibility='hidden'">Cancel</button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
+
+{% block js %}
+<script>
+    function uploadFile() {
+        var file = document.getElementById('fileinput').files[0];
+
+        if (file) {
+            var formData = new FormData();
+            formData.append('filename', file.name);
+            formData.append('file', file);
+            formData.append('u_id', {{ user.u_id }});
+            $.ajax({
+                url: '{{ url_for('question.upload') }}',
+                type: 'POST',
+                data: formData,
+                contentType: false,
+                processData: false,
+                success: function (response) {
+                    console.log('上传成功:', response);
+                    window.location.href = response.redirect_url;
+                },
+            });
+        }
+    };
+    
+    
+    function showMenu(clicked) {
+        var div_op_list = document.querySelectorAll(".other-op");
+        div_op_list.forEach(function(div_op) {
+            var menu = div_op.getElementsByClassName("menu")[0];
+            if(div_op != clicked) {
+                menu.style.visibility = "hidden";
+            }else{
+                if (menu.style.visibility == "hidden") {
+                    menu.style.visibility = "visible";
+                } else{
+                    menu.style.visibility = "hidden";
+                }
+            }
+        })
+    }
+</script>
+{% endblock %}

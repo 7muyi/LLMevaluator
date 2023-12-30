@@ -160,7 +160,7 @@
     <div id="profile-img">
         <span>Profile picture</span>
         <div class="rounded-img" style="margin-top: 20px; width: 50%; cursor: pointer;">
-            <img id="profile-pic" src="{{ url_for('user.uploads_file', filename=user.u_pic_path) }}" alt="Image" onclick="document.getElementById('fileinput').click();">
+            <img id="profile-pic" src="{{ url_for('user.uploads', filename=user.u_pic_path) }}" alt="Image" onclick="document.getElementById('fileinput').click();">
         </div>
         <input type="file" id="fileinput" style="display: none;" onchange="uploadImage()">
         <div id="edit" onclick="document.getElementById('fileinput').click();" style="cursor: pointer;">
