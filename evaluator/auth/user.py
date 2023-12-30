@@ -1,7 +1,7 @@
 import os
 import time
 
-from flask import Blueprint, render_template, request, redirect, url_for, send_from_directory
+from flask import Blueprint, render_template, request, redirect, send_file, url_for, send_from_directory
 
 from ..models import User
 from evaluator import db, app
@@ -64,7 +64,7 @@ def register():
 @user.route("/uploads", methods=["GET"])
 def uploads():
     filename = request.args.get("filename")
-    return send_from_directory(app.config["UPLOAD_FOLDER"], filename)
+    return send_file(os.path.join(app.config["PROFILE_PIC_FOLDER"], filename))
 
 @user.route("/profile", methods=["GET","POST"])
 def profile():
@@ -75,7 +75,7 @@ def profile():
         old_password = request.form.get("old_password", None)
         new_password = request.form.get("new_password", None)
         
-        user = User.query.filter_by(u_id=u_id).first()
+        user = User.query.get(u_id)
         
         is_error = False
         
@@ -137,7 +137,8 @@ def profile():
         return render_template("your_profile.html", user=user, res=res)
     
     u_id = request.args.get("u_id")
-    user = User.query.filter_by(u_id=u_id).first()
+    user = User.query.get(u_id)
+
     user = {
         "u_id": user.u_id,
         "u_name": user.u_name,
@@ -149,27 +150,21 @@ def profile():
 @user.route("/profile/img", methods=["POST"])
 def upload_img():
     u_id = request.form["u_id"]
-    user = User.query.filter_by(u_id=u_id).first()
-    
-    rel_pic_dir = os.path.dirname(user.u_pic_path)
+    user = User.query.get(u_id)
     
     img = request.files.get("image")
-    
     suffix = img.filename.split(".")[-1]  # Extract the file extension of an image.
-    pic_dir = os.path.join(f"evaluator/{app.config['UPLOAD_FOLDER']}", rel_pic_dir)
-    new_img_name = f"{user.u_id}_{str(int(time.time()))}.{suffix}"
-    img_path = os.path.join(pic_dir, new_img_name)
-    
+    img_name = f"{user.u_id}_{str(int(time.time()))}.{suffix}"
+    img_path = os.path.join(app.config["PROFILE_PIC_FOLDER"], img_name)
     img.save(img_path)
     
     # Download successfully
     if os.path.exists(img_path):
         # If it is not the default path, in other words, it already has a profile pict on the server.
         # Delete old profile pic.
-        if user.u_pic_path != "profile_pics/icon_black.png":
-            os.remove(os.path.join(f"evaluator/{app.config['UPLOAD_FOLDER']}", user.u_pic_path))
+        if user.u_pic_path != "default_pic.png":
+            os.remove(os.path.join(app.config["PROFILE_PIC_FOLDER"], user.u_pic_path))
         
-        # *: The file separator in Windows is '\', but Flask requires '/'.
-        user.u_pic_path = f"{rel_pic_dir}/{new_img_name}"
+        user.u_pic_path = img_name
         db.session.commit()
     return user.u_pic_path

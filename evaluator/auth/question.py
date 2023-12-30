@@ -13,7 +13,7 @@ question = Blueprint("question", __name__)
 @question.route("/list",methods=["GET"])
 def question_list():
     u_id = request.args.get("u_id")
-    user = User.query.filter_by(u_id=u_id).first()
+    user = User.query.get(u_id)
     questions = Question.query.filter_by(u_id=u_id).all()
     question_list = []
     for question in questions:
@@ -23,7 +23,6 @@ def question_list():
             "num of row": question.q_num_row,
             "creation time": question.q_create_time.strftime("%I:%M %p %b %d"),
         })
-    print(question_list)
     user = {
         "u_id": user.u_id,
         "u_name": user.u_name,
@@ -43,14 +42,8 @@ def upload():
     filename = request.form["filename"]
     file = request.files.get("file")
     
-    question = Question.query.filter_by(u_id=u_id).first()
-    
-    rel_pic_dir = os.path.dirname(question.q_file_path)
-    file_dir = os.path.join(f"evaluator/{app.config['UPLOAD_FOLDER']}", rel_pic_dir)
     unique_file_name = f"{u_id}_{str(int(time.time()))}.csv"
-    
-    file_path = os.path.join(file_dir, unique_file_name)
-    
+    file_path = os.path.join(app.config["RUN_DIR"], app.config["QUESTION_FOLDER"], unique_file_name)
     file.save(file_path)
     
     # Download successfully
@@ -68,9 +61,9 @@ def upload():
 
         new_question = Question(
             q_name=filename,
-            q_file_path=f"{rel_pic_dir}/{unique_file_name}",
+            q_file_path=unique_file_name,
             q_num_row=row_count,
-            u_id=u_id
+            u_id=u_id,
         )
         db.session.add(new_question)
         db.session.commit()
@@ -82,23 +75,23 @@ def upload():
 def delete():
     q_id = request.form["q_id"]
     u_id = request.form["u_id"]
-    question = Question.query.filter_by(q_id=q_id).first()
+    question = Question.query.get(q_id)
     
     if question:
-        file_path = os.path.join(f"evaluator/{app.config['UPLOAD_FOLDER']}", question.q_file_path)
+        file_path = os.path.join(app.config["RUN_DIR"], app.config["QUESTION_FOLDER"], question.q_file_path)
         if os.path.exists(file_path):
             os.remove(file_path)
             db.session.delete(question)
             db.session.commit()
-    return redirect(url_for('question.question_list', u_id=u_id))
+    return redirect(url_for("question.question_list", u_id=u_id))
 
 @question.route("/edit", methods=["POST"])
 def edit():
     q_id = request.form["q_id"]
     u_id = request.form["u_id"]
     q_name = request.form["q_name"]
-    question = Question.query.filter_by(q_id=q_id).first()
+    question = Question.query.get(q_id)
     if question:
         question.q_name = q_name
         db.session.commit()
-    return redirect(url_for('question.question_list', u_id=u_id))
+    return redirect(url_for("question.question_list", u_id=u_id))

@@ -1,7 +1,14 @@
+import os
+
+
 class Config():
     # General configyration
-    STATIC_FOLDER = "static/"
-    UPLOAD_FOLDER = "uploads/"
+    STATIC_FOLDER = "static"
+    UPLOAD_FOLDER = "uploads"
+    RUN_DIR = "evaluator"
+    PROFILE_PIC_FOLDER = os.path.join(UPLOAD_FOLDER, "profile_pics")
+    PROMPT_FOLDER = os.path.join(UPLOAD_FOLDER, "prompts")
+    QUESTION_FOLDER = os.path.join(UPLOAD_FOLDER, "questions")
     MAX_CONTENT_LENGTH = 16 * 1024 * 1024
     DEBUG = True
     

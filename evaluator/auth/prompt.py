@@ -14,7 +14,7 @@ prompt = Blueprint("prompt", __name__)
 @prompt.route("/list",methods=["GET"])
 def prompt_list():
     u_id = request.args.get("u_id")
-    user = User.query.filter_by(u_id=u_id).first()
+    user = User.query.get(u_id)
     prompts = Prompt.query.filter_by(u_id=u_id).all()
     prompt_list = []
     for prompt in prompts:
@@ -24,7 +24,6 @@ def prompt_list():
             "num of row": prompt.p_num_row,
             "creation time": prompt.p_create_time.strftime("%I:%M %p %b %d"),
         })
-    print(prompt_list)
     user = {
         "u_id": user.u_id,
         "u_name": user.u_name,
@@ -44,14 +43,8 @@ def upload():
     filename = request.form["filename"]
     file = request.files.get("file")
     
-    prompt = Prompt.query.filter_by(u_id=u_id).first()
-    
-    rel_pic_dir = os.path.dirname(prompt.p_file_path)
-    file_dir = os.path.join(f"evaluator/{app.config['UPLOAD_FOLDER']}", rel_pic_dir)
     unique_file_name = f"{u_id}_{str(int(time.time()))}.csv"
-    
-    file_path = os.path.join(file_dir, unique_file_name)
-    
+    file_path = os.path.join(app.config["RUN_DIR"], app.config["PROMPT_FOLDER"], unique_file_name)
     file.save(file_path)
     
     # Download successfully
@@ -69,9 +62,9 @@ def upload():
         
         new_prompt = Prompt(
             p_name=filename,
-            p_file_path=f"{rel_pic_dir}/{unique_file_name}",
+            p_file_path=unique_file_name,
             p_num_row=row_count,
-            u_id=u_id
+            u_id=u_id,
         )
         db.session.add(new_prompt)
         db.session.commit()
@@ -83,23 +76,23 @@ def upload():
 def delete():
     p_id = request.form["p_id"]
     u_id = request.form["u_id"]
-    prompt = Prompt.query.filter_by(p_id=p_id).first()
+    prompt = Prompt.query.get(p_id)
 
     if prompt:
-        file_path = os.path.join(f"evaluator/{app.config['UPLOAD_FOLDER']}", prompt.p_file_path)
+        file_path = os.path.join(app.config["RUN_DIR"], app.config["PROMPT_FOLDER"], prompt.p_file_path)
         if os.path.exists(file_path):
             os.remove(file_path)
             db.session.delete(prompt)
             db.session.commit()
-    return redirect(url_for('prompt.prompt_list', u_id=u_id))
+    return redirect(url_for("prompt.prompt_list", u_id=u_id))
 
 @prompt.route("/edit", methods=["POST"])
 def edit():
     p_id = request.form["p_id"]
     u_id = request.form["u_id"]
     p_name = request.form["p_name"]
-    prompt = Prompt.query.filter_by(p_id=p_id).first()
+    prompt = Prompt.query.get(p_id)
     if prompt:
         prompt.p_name = p_name
         db.session.commit()
-    return redirect(url_for('prompt.prompt_list', u_id=u_id))
+    return redirect(url_for("prompt.prompt_list", u_id=u_id))

@@ -253,7 +253,7 @@ tr{
                                         <span>Edit</span>
                                     </div>
                                 </li>
-                                <li class="menu-li" onclick="document.getElementById('form-del').submit();">
+                                <li class="menu-li" onclick="this.firstElementChild.submit();">
                                     <form id="form-del" method="post" class="menu-content" action="{{ url_for('question.delete') }}">
                                         <input type="hidden" name="q_id" value="{{ question.q_id }}">
                                         <input type="hidden" name="u_id" value="{{ user.u_id }}">
