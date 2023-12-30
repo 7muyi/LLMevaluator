@@ -62,7 +62,7 @@ def register():
 
 
 @user.route("/uploads", methods=["GET"])
-def uploads_file():
+def uploads():
     filename = request.args.get("filename")
     return send_from_directory(app.config["UPLOAD_FOLDER"], filename)
 

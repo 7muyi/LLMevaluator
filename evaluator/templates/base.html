@@ -109,7 +109,7 @@
         <div id="sidebar">
             <div id="person-box">
                 <div class="rounded-img">
-                    <img id="person-box-pic" src="{{ url_for('user.uploads_file', filename=user.u_pic_path) }}">
+                    <img id="person-box-pic" src="{{ url_for('user.uploads', filename=user.u_pic_path) }}">
                 </div>
                 <div>
                     <p style="font-size: 20px; margin-top: 10px;"> {{user.u_name}} </p>
@@ -141,24 +141,23 @@
                     </li>
                     <li style="border-bottom: 1px solid #e9ecef; list-style: none;"></li> 
                     <li id="prompt_bank" class="ActionListItem">
-                        <a class="ActionListContent" href="">
+                        <a class="ActionListContent" href="{{ url_for('prompt.prompt_list', u_id=user.u_id) }}">
                             <img src="{{ url_for('static', filename='prompt.png') }}" class="octicon-person">
                             <span class="option">Prompt library</span>
                         </a>
                     </li>
                     <li style="border-bottom: 1px solid #e9ecef; list-style: none;"></li> 
                     <li id="question_bank" class="ActionListItem">
-                        <a class="ActionListContent" href="">
+                        <a class="ActionListContent" href="{{ url_for('question.question_list', u_id=user.u_id) }}">
                             <img src="{{ url_for('static', filename='question.png') }}" class="octicon-person">
                             <span class="option">Question bank</span>
                         </a>
                     </li>
-                    
                 </ul>
             </div>
         </div>
         
-        <div style="width: 73%; height: 100%;">
+        <div style="width: 75%; height: 100%; padding-right: 2%;">
             {% block content %}
             {% endblock %}
         </div>
