@@ -120,7 +120,7 @@
                 <ul style="height: 100%; padding-left: 10px;">
                     <li style="border-bottom: 1px solid #bdc1c5; list-style: none;"></li> 
                     <li id="personal_information" class="ActionListItem">
-                        <a class="ActionListContent" href="{{ url_for('user.profile', u_id=user.u_id )}}">
+                        <a class="ActionListContent" href="{{ url_for('user.profile', u_id=user.u_id)}}">
                             <img src="{{ url_for('static', filename='person.png') }}" class="octicon-person">
                             <span class="option">Personal information</span>
                         </a>
@@ -134,7 +134,7 @@
                     </li>
                     <li style="border-bottom: 1px solid #e9ecef; list-style: none;"></li> 
                     <li id="llms" class="ActionListItem">
-                        <a class="ActionListContent" href="">
+                        <a class="ActionListContent" href="{{ url_for('llm.llm_list', u_id=user.u_id) }}">
                             <img src="{{ url_for('static', filename='model.png') }}" class="octicon-person">
                             <span class="option">LLMs</span>
                         </a>
@@ -157,7 +157,7 @@
             </div>
         </div>
         
-        <div style="width: 72%; height: 100%; padding-right: 2%;">
+        <div style="width: 72%; height: 100%; padding-right: 2%; position:relative;">
             {% block content %}
             {% endblock %}
         </div>
