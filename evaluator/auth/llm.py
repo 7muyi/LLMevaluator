@@ -3,7 +3,7 @@ from datetime import datetime
 from flask import Blueprint, jsonify, render_template, request, redirect, url_for
 
 from ..models import User, LLM
-from evaluator import db, app
+from evaluator import db
 
 
 llm = Blueprint("llm", __name__)
@@ -12,10 +12,21 @@ llm = Blueprint("llm", __name__)
 def llm_list():
     u_id = request.args.get("u_id")
     user = User.query.get(u_id)
-    llms = LLM.query.filter_by(u_id=u_id).all()
+    # *:All users share Admin's files.
+    admin = User.query.get(1)
+    
     llm_brief_desc = ["name", "url", "creation time"]
     llm_list = []
-    for llm in llms:
+    for llm in admin.llms:
+        llm_list.append({
+            "l_id": llm.l_id,
+            "name": llm.l_name,
+            "url": llm.l_url,
+            "access_token": llm.l_access_token,
+            "return_format": llm.l_return_format,
+            "creation time": llm.l_create_time.strftime("%I:%M %p %b %d"),
+        })
+    for llm in user.llms:
         llm_list.append({
             "l_id": llm.l_id,
             "name": llm.l_name,
@@ -66,7 +77,7 @@ def delete():
     l_id = request.form["l_id"]
     u_id = request.form["u_id"]
     llm = LLM.query.get(l_id)
-
+    
     if llm:
         db.session.delete(llm)
         db.session.commit()

@@ -14,9 +14,18 @@ question = Blueprint("question", __name__)
 def question_list():
     u_id = request.args.get("u_id")
     user = User.query.get(u_id)
-    questions = Question.query.filter_by(u_id=u_id).all()
+    # *:All users share Admin's files.
+    admin = User.query.get(1)
+    
     question_list = []
-    for question in questions:
+    for question in admin.questions:
+        question_list.append({
+            "q_id": question.q_id,
+            "name": question.q_name,
+            "num of row": question.q_num_row,
+            "creation time": question.q_create_time.strftime("%I:%M %p %b %d"),
+        })
+    for question in user.questions:
         question_list.append({
             "q_id": question.q_id,
             "name": question.q_name,

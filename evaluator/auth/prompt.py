@@ -15,15 +15,25 @@ prompt = Blueprint("prompt", __name__)
 def prompt_list():
     u_id = request.args.get("u_id")
     user = User.query.get(u_id)
-    prompts = Prompt.query.filter_by(u_id=u_id).all()
+    # *:All users share Admin's files.
+    admin = User.query.get(1)
+    
     prompt_list = []
-    for prompt in prompts:
+    for prompt in admin.prompts:
         prompt_list.append({
             "p_id": prompt.p_id,
             "name": prompt.p_name,
             "num of row": prompt.p_num_row,
             "creation time": prompt.p_create_time.strftime("%I:%M %p %b %d"),
         })
+    for prompt in user.prompts:
+        prompt_list.append({
+            "p_id": prompt.p_id,
+            "name": prompt.p_name,
+            "num of row": prompt.p_num_row,
+            "creation time": prompt.p_create_time.strftime("%I:%M %p %b %d"),
+        })
+    
     user = {
         "u_id": user.u_id,
         "u_name": user.u_name,
