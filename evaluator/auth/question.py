@@ -104,3 +104,22 @@ def edit():
         question.q_name = q_name
         db.session.commit()
     return redirect(url_for("question.question_list", u_id=u_id))
+
+@question.route("/brief_desc_list", methods=["GET"])
+def brief_desc_list():
+    u_id = request.args.get("u_id")
+    user = User.query.get(u_id)
+    admin = User.query.get(1)
+    
+    question_list = []
+    for question in admin.questions:
+        question_list.append({
+            "q_id": question.q_id,
+            "q_name": question.q_name,
+        })
+    for question in user.questions:
+        question_list.append({
+            "q_id": question.q_id,
+            "q_name": question.q_name,
+        })
+    return jsonify({"questions": question_list})

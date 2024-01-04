@@ -101,3 +101,21 @@ def edit():
     
         db.session.commit()
     return redirect(url_for("llm.llm_list", u_id=u_id))
+
+@llm.route("/brief_desc_list", methods=["GET"])
+def brief_desc_list():
+    u_id = request.args.get("u_id")
+    user = User.query.get(u_id)
+    admin = User.query.get(1)
+    llm_list = []
+    for llm in admin.llms:
+        llm_list.append({
+            "l_id": llm.l_id,
+            "l_name": llm.l_name,
+        })
+    for llm in user.llms:
+        llm_list.append({
+            "l_id": llm.l_id,
+            "l_name": llm.l_name,
+        })
+    return jsonify({"llms": llm_list})
