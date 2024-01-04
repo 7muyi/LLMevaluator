@@ -11,4 +11,4 @@ app.config.from_object(configs["development"])
 
 db = SQLAlchemy(app)
 
-from . import auth, fuzzer
+from . import auth 

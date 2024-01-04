@@ -106,3 +106,22 @@ def edit():
         prompt.p_name = p_name
         db.session.commit()
     return redirect(url_for("prompt.prompt_list", u_id=u_id))
+
+@prompt.route("/brief_desc_list", methods=["GET"])
+def brief_desc_list():
+    u_id = request.args.get("u_id")
+    user = User.query.get(u_id)
+    admin = User.query.get(1) 
+    
+    prompt_list = []
+    for prompt in admin.prompts:
+        prompt_list.append({
+            "p_id": prompt.p_id,
+            "p_name": prompt.p_name,
+        })
+    for prompt in user.prompts:
+        prompt_list.append({
+            "p_id": prompt.p_id,
+            "p_name": prompt.p_name,
+        })
+    return jsonify({"prompts": prompt_list})

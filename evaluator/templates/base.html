@@ -126,8 +126,8 @@
                         </a>
                     </li>
                     <li style="border-bottom: 1px solid #e9ecef; list-style: none;"></li> 
-                    <li id="test" class="ActionListItem"">
-                        <a class="ActionListContent" href="">
+                    <li id="test" class="ActionListItem">
+                        <a class="ActionListContent" href="{{ url_for('test.test_list', u_id=user.u_id) }}">
                             <img src="{{ url_for('static', filename='test.png') }}" class="octicon-person">
                             <span class="option">Test</span>
                         </a>

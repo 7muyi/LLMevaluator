@@ -75,9 +75,10 @@ class Report(db.Model):
     __tablename__ = "report"
     
     r_id = db.Column(db.Integer, primary_key=True, autoincrement=True)
-    r_name = db.Column(db.String(30), nullable=False)
     r_file_path = db.Column(db.String(100), unique=True, nullable=False)
     r_create_time = db.Column(db.DateTime, default=db.func.now())
-    u_id = db.Column(db.Integer, db.ForeignKey("user.u_id"))
-    
-    user = db.relationship("User", backref=db.backref("reports", lazy=True))
+    r_attack = db.Column(db.Integer)
+    r_success = db.Column(db.Integer)
+    t_id = db.Column(db.Integer, db.ForeignKey("test.t_id"))
+    # *:Set to cascade update.
+    test = db.relationship("Test", backref=db.backref("reports", lazy=True, cascade="all, delete-orphan"))
