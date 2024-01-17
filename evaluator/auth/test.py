@@ -94,7 +94,7 @@ def detect():
             },
         "select_policy": select_strategy,
         "stop_condition": stop_condition,
-    
+        "mut_model_name": "gpt-4",
     })
     thread.start()
     
@@ -103,13 +103,13 @@ def detect():
 def fuzzing(t_id, seed_path, question_path, number, tar_model, select_policy, stop_condition, 
             mut_model_name: str = "gpt-3.5-turbo"):
     if tar_model["name"] == "gpt-3.5-turbo":
-        tar_model = OpenAILLM(tar_model["name"], "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")
+        tar_model = OpenAILLM(tar_model["name"], "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")
     else:
         tar_model = LocalLLM(url=tar_model["url"],
                              return_format=tar_model["return_format"],
                              access_token=tar_model["access_token"])
     
-    mut_model = OpenAILLM(mut_model_name, "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")
+    mut_model = OpenAILLM(mut_model_name, "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")
     
     if select_policy == "Random":
         select = RandomSelectPolicy()
@@ -125,7 +125,7 @@ def fuzzing(t_id, seed_path, question_path, number, tar_model, select_policy, st
         max_jailbreak = -1
         max_iteration = number
     
-    predictor = OpenAIPredictor("gpt-3.5-turbo", "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")
+    predictor = OpenAIPredictor("gpt-3.5-turbo", "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")
     
     initial_seed = []
     
