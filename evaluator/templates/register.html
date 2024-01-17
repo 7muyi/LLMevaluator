@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Join LLMevaluator · LLMevaluator</title>
+    <style>
+        video {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            z-index: -1;
+        }
+
+        #header {
+            display: flex;
+            justify-content: space-between;
+        }
+
+        .icon {
+            padding: 10px;
+            width: 30px;
+            height: 30px;
+        }
+
+        .signup-container {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            padding: 20px;
+            background: #0c162d;
+            border-radius: 20px;
+
+            width: 35%;
+        }
+
+        .typing {
+            color: #8193b2;
+            text-align: left;
+            margin-bottom: 15px;
+
+            font-family: monospace;
+            font-size: 17px;
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+            width: 100%;
+        }
+
+        .form-group label {
+            color: #00cfc8;
+            font-family: monospace;
+            font-size: 17px;
+            font-weight: bold;
+        }
+
+        .form-group input {
+            width: 100%;
+            padding: 10px;
+            margin: 5px 0;
+            box-sizing: border-box;
+            border-radius: 5px;
+            height: 35px;
+        }
+
+        .signup-container button {
+            width: 100%;
+            padding: 10px;
+            background-color: #007bff;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+
+            color: #ffffff;
+            font-weight: bold;
+            font-size: 15px;
+        }
+        
+        .warn-msg {
+            background-color: #ffebe9;
+            padding: 12px;
+            border: 1px solid #ffc1c0;
+            border-radius: 5px;
+            margin-bottom: 10px;
+            width: 320px;
+            height: 14px;
+        }
+    </style>
+</head>
+<body>
+    <video autoplay muted loop>
+        <source src="{{ url_for('static', filename='signup_backgroud.mp4') }}" type="video/mp4">
+    </video>
+
+    <div id="header">
+        <img class="icon" src="{{ url_for('static', filename='icon_white.png') }}">
+
+        <p style="text-align: right; font-size: large; font-family: Arial, sans-serif; color: #7c8dac;">Already have an account? <a href="{{ url_for('user.login') }}" style="color: #ffff; text-decoration: none; font-weight: bold;">Sign in →</a></p>
+    </div>
+
+    <div class="signup-container">
+        <div id="typing-container" class="typing">
+            {% if res %}
+            <div style="line-height: 1.5;">
+                Welcome to LLMevaluator!<br>Let’s begin the adventure
+            </div>
+            {% endif %}
+        </div>
+        
+        {% if res and res.code != 0 %}
+        <div class="warn-msg">
+            {{ res.message }}
+        </div>
+        {% endif %}
+        
+        <form method="post">
+            <div class="form-group">
+                <label for="username">Enter username</label>
+                <input type="text" name="username">
+            </div>
+
+            <div class="form-group">
+                <label for="password">Enter password</label>
+                <input type="password" name="password1">
+            </div>
+
+            <div class="form-group">
+                <label for="password">Enter password again</label>
+                <input type="password" name="password2">
+            </div>
+
+            <button type="submit">Sign Up</button>
+        </form>
+        
+    </div>
+
+    <script>
+        var typingContainer = document.getElementById('typing-container');
+
+        var lines = ["Welcome to LLMevaluator!", "Let’s begin the adventure"];
+
+        var typingSpeed = 50;
+        var lineDelay = 50;
+        var lineHeight = 1.5;
+
+        function typeText(lines, index) {
+            if (index < lines.length) {
+                var currentLine = lines[index];
+                var currentLength = 0;
+
+                var lineElement = document.createElement("div");
+                lineElement.style.lineHeight = lineHeight; // 设置行高
+                typingContainer.appendChild(lineElement);
+
+                var typingInterval = setInterval(function () {
+                    lineElement.innerHTML = currentLine.slice(0, currentLength).replace(/\n/g, "<br>");
+                    currentLength++;
+
+                    if (currentLength > currentLine.length) {
+                        clearInterval(typingInterval);
+                        setTimeout(function () {
+                            typeText(lines, index + 1);
+                        }, lineDelay);
+                    }
+                }, typingSpeed);
+            }
+        }
+
+        {% if not res %}
+        typeText(lines, 0);
+        {% endif %}
+    </script>
+</body>
+</html>
+
+
+

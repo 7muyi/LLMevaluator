@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Sign in LLMevaluator · LLMevaluator</title>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+    <style>
+        body {
+            background-color: #ffffff;
+        }
+
+        .container {
+            margin-top: 50px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .icon {
+            text-align: center;
+        }
+
+        .icon img {
+            width: 60px;
+        }
+
+        .warn-msg {
+            background-color: #ffebe9;
+            padding: 12px;
+            border: 1px solid #ffc1c0;
+            border-radius: 5px;
+            margin-bottom: 10px;
+            width: 320px;
+            height: 50px;
+        }
+
+        .login-text {
+            text-align: center;
+            margin-top: 10px;
+            margin-bottom: 10px;
+        }
+
+        .login-box {
+            background-color: #f6f8fa;
+            padding: 20px;
+            border: 1px solid #d8dee4;
+            border-radius: 5px;
+            width: 320px;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .register-box {
+            background-color: #ffffff;
+            padding: 12px;
+            border: 1px solid #d8dee4;
+            border-radius: 5px;
+            margin-top: 20px;
+            width: 320px;
+            height: 50px;
+        }
+
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="icon">
+            <img src="{{ url_for('static', filename='icon_black.png') }}" alt="icon">
+        </div>
+
+        <div class="login-text">
+            <h4 style="font-size: 20px; font-weight: 400;">Sign in LLMevaluator</h4>
+        </div>
+        
+        {% if res == False %}
+        <div class="warn-msg">
+            Incorrect username or password.
+        </div>
+        {% endif %}
+
+        <div class="login-box">
+            <form method="post">
+                <div class="form-group">
+                    <label for="username" style="font-weight: 350; font-size: 15px;">Username or email address</label>
+                    <input type="text" class="form-control" name="username">
+                </div>
+
+                <div class="form-group">
+                    <label for="password" style="font-weight: 350; font-size: 15px;">Password:</label>
+                    <input type="password" class="form-control" name="password">
+                </div>
+
+                <button type="submit" class="btn btn-block" style="background-color: #1f883d; font-weight: bolder; color: #ffffff;">Sign in</button>
+            </form>
+        </div>
+
+        <div class="register-box">
+            <p style="text-align: center;">New to LLMevaluator? <a href="{{ url_for('user.register') }}">Create an account.</a></p>
+        </div>
+    </div>
+
+</body>
+</html>
