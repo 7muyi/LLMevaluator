@@ -4,12 +4,12 @@ import time
 import threading
 from datetime import datetime
 
-from flask import Blueprint, config, jsonify, redirect, request, render_template, send_file, url_for
+from flask import Blueprint, jsonify, redirect, request, render_template, send_file, url_for
 
-from .fuzzer.mutator import MutateRandomSinglePolicy, OpenAIMutator
+from .fuzzer.mutator import MutateRandomSinglePolicy, Generate, Shorten, Rephrase, CrossOver, Embed, Expand
 from .fuzzer.selection import RandomSelectPolicy, RoundRobinSelectPolicy, MCTSExploreSelectPolicy
-from .fuzzer.llms.llm import LocalLLM, OpenAILLM
-from .fuzzer.utils.predict import OpenAIPredictor
+from .fuzzer.llms.llm import LLMFromAPI, OpenAILLM
+from .fuzzer.utils.predict import LLMPredictor
 from .fuzzer.fuzzer import Fuzzer
 from ..models import Prompt, Report, Test, User, Question, LLM
 from evaluator import db, app
@@ -100,16 +100,22 @@ def detect():
     
     return redirect(url_for("test.test_list", u_id=u_id))
 
-def fuzzing(t_id, seed_path, question_path, number, tar_model, select_policy, stop_condition, 
+def fuzzing(t_id, seed_path, question_path, number,
+            tar_model, select_policy, stop_condition,
             mut_model_name: str = "gpt-3.5-turbo"):
     if tar_model["name"] == "gpt-3.5-turbo":
         tar_model = OpenAILLM(tar_model["name"], "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")
     else:
-        tar_model = LocalLLM(url=tar_model["url"],
-                             return_format=tar_model["return_format"],
-                             access_token=tar_model["access_token"])
+        tar_model = LLMFromAPI(
+            model_name_or_path=tar_model["name"],
+            url=tar_model["url"],
+            return_format=tar_model["return_format"],
+            access_token=tar_model["access_token"]
+        )
     
-    mut_model = OpenAILLM(mut_model_name, "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")
+    model = tar_model
+    # *: Openai API expired
+    # model = OpenAILLM(mut_model_name, "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")
     
     if select_policy == "Random":
         select = RandomSelectPolicy()
@@ -125,7 +131,7 @@ def fuzzing(t_id, seed_path, question_path, number, tar_model, select_policy, st
         max_jailbreak = -1
         max_iteration = number
     
-    predictor = OpenAIPredictor("gpt-3.5-turbo", "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")
+    predictor = LLMPredictor(model)
     
     initial_seed = []
     
@@ -154,11 +160,10 @@ def fuzzing(t_id, seed_path, question_path, number, tar_model, select_policy, st
         predictor=predictor,
         initial_seed=initial_seed,
         mutate_policy=MutateRandomSinglePolicy(
-            OpenAIMutator(mut_model, temperature=1),
-            concatentate=False,
+            [Generate(), Shorten(), Expand(), Rephrase(), CrossOver()],
+            model
         ),
         select_policy=select,
-        energy=1,
         max_jailbreak=max_jailbreak,
         max_iteration=max_iteration,
         result_file=os.path.join(app.config["RUN_DIR"], app.config["REPORT_FOLDER"], file_name),

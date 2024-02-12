@@ -252,7 +252,7 @@ tr{
                         <img src="{{ url_for('static', filename='other.png') }}" style="width: 20px; margin-right: 0;">
                         <div class="menu">
                             <ul style="height: 100%;">
-                                <li class="menu-li" onclick="showEditBox({{ llm.l_id}}, '{{ llm.name }}', '{{ llm.url }}', '{{ llm.access_token}}', '{{ llm.return_format }}')">
+                                <li class="menu-li" onclick="showEditBox({{ llm.l_id }}, '{{ llm.name }}', '{{ llm.url }}', '{{ llm.return_format}}', '{{ llm.access_token }}')">
                                     <div class="menu-content">
                                         <img src="{{ url_for('static', filename='edit_grey.png') }}">
                                         <span>Edit</span>
@@ -290,7 +290,7 @@ tr{
             <label class="label1">Return format</label>
             <label class="label2" style="width: 60px;">reuslt</label>
         </div>
-
+        
         <div>
             <label class="label1">Access token</label>
             <label class="label2" style="width: 263px; height: 60px;">24.d1246a223fc06def1b4ca0bf42851d78.2592000.1706589675.282335-43514677</label>
