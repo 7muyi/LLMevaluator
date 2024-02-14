@@ -7,9 +7,12 @@ import numpy as np
 
 from .llms import LLM, OpenAILLM
 from .fuzzer import Fuzzer, PromptNode
-from .utils.extract import extract
+from .utils.extract import extract, clean
 from .utils.template import QUESTION_PLACEHOLDER
+from .utils.log_config import get_logger
 
+
+info_logger = get_logger("info")
 
 class Mutator(ABC):
     def __init__(self) -> None:
@@ -205,7 +208,9 @@ class MutateRandomSinglePolicy(MutatePolicy):
     
     def mutate_single(self, prompt_node: PromptNode):
         mutator = np.random.choice(self.mutators, p=self.weights)
+        info_logger.info(f"The selected mutator: {mutator.__class__.__name__}")
         result =  mutator.mutate(prompt_node.prompt)
+        result = clean(result)
         if isinstance(mutator, LLMMutator) and result:
             if isinstance(mutator.model, OpenAILLM):
                 start, end = "{" , "}"

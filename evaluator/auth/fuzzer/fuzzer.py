@@ -3,6 +3,8 @@ import os
 import time
 from typing import List, TYPE_CHECKING
 
+from click import prompt
+
 from .llms import LLM
 from .utils.predict import Predictor
 from .utils import get_logger, synthesis_message
@@ -101,7 +103,7 @@ class Fuzzer:
         self.writer.writerow(
             ["index", "prompt", "response"]
         )
-        
+        self.raw_fp.flush()
         self.generate_in_batch = False
         if len(self.questions) > 0 and generate_in_batch is True:
             self.generate_in_batch = True
@@ -136,12 +138,13 @@ class Fuzzer:
                 self.info_logger.info(f"The mutation:\n{mutated_result.prompt}")
                 self.evaluate(mutated_result)
                 self.update(mutated_result)
-        except KeyboardInterrupt:
-            self.info_logger.info("Fuzzingn interrupted by user!")
-        self.raw_fp.close()
-        self.info_logger.info("Fuzzing Test Finished!\n\n")
-        
-        return self.cur_jailbreak, self.cur_iteration
+        except Exception as e:
+            self.info_logger.info(f"Fuzzingn test undergo an error: {e}")
+            raise e
+        else:
+            self.info_logger.info("Fuzzing test finish!")
+        finally:
+            self.raw_fp.close()
     
     def evaluate(self, prompt_node: PromptNode):
         responses = []
@@ -170,7 +173,9 @@ class Fuzzer:
         if prompt_node.num_jailbreak > 0:
             prompt_node.index = len(self.prompt_nodes)
             self.prompt_nodes.append(prompt_node)
-            self.writer.writerow([prompt_node.index, prompt_node.prompt, prompt_node.response])
+            row = [prompt_node.index, prompt_node.prompt]
+            row.extend(prompt_node.response)
+            self.writer.writerow(row)
             self.info_logger.info("The mutation is valid.")
         else:
             self.info_logger.info("The mutation is invalid.")

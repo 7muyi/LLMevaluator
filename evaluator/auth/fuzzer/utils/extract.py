@@ -6,3 +6,6 @@ def extract(input: str, start: str, end: str):
         return input.replace(start, "").replace(end, "")
     
     return input[start_index + len(start): end_index]
+
+def clean(input: str):
+    return input.replace("\n\n", "\n")

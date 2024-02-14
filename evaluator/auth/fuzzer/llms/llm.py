@@ -28,7 +28,7 @@ class OpenAILLM(LLM):
                  temperature: int = 0,
                  max_tokens: int = 512) -> None:
         super(OpenAILLM, self).__init__()
-        
+        self.model_name_or_path = model_name_or_path
         if not api_key.startswith("sk-"):
             raise ValueError("OpenAI API key should start with sk-")
         if self.model_name_or_path not in ["gpt-3.5-turbo", "gpt-4"]:
@@ -40,24 +40,16 @@ class OpenAILLM(LLM):
         self.max_tokens = max_tokens
     
     def generate(self, input: str) -> str:
-        for _ in range(10):
-            try:
-                results = self.client.chat.completions.create(
-                    model=self.model_name_or_path,
-                    messages=[
-                        {"role": "system", "content": "you are helpful assistant."},
-                        {"role": "user", "content": input},
-                    ],
-                    temperature=self.temperature,
-                    max_tokens=self.max_tokens,
-                )
-                
-                return results.choices[0].message.content
-            
-            except Exception as e:
-                info_logger.warning(f"OpenAI API call failed due to {e}. Retrying {_+1} / {10} times...")
-                time.sleep(5)
-        return ""
+        results = self.client.chat.completions.create(
+            model=self.model_name_or_path,
+            messages=[
+                {"role": "system", "content": "you are helpful assistant."},
+                {"role": "user", "content": input},
+            ],
+            temperature=self.temperature,
+            max_tokens=self.max_tokens,
+        )
+        return results.choices[0].message.content
     
     def generate_batch(self, inputs: List[str]) -> List[str]:
         results = []
@@ -116,20 +108,22 @@ class LLMFromAPI(LLM):
             "Content-Type": "application/json"
         }
         
-        for _ in range(10):
-            try:
-                response = requests.request("POST", self.url, headers=headers, data=payload)
-                res = response.json()
-                for query in self.query_chain:
-                    if query.isdigit():
-                        res = res[query]
-                    else:
-                        res = res.get(query)
+        try:
+            response = requests.request("POST", self.url, headers=headers, data=payload)
+            if response.status_code != 200:
+                raise LLMError(f"Connection error: status code{response.status_code}")
+            res = response.json()
+            for query in self.query_chain:
+                if query.isdigit():
+                    res = res[query]
                 else:
-                    return res
-            except Exception as e:
-                info_logger.warning(f"{e}. Retrying{_+1} / {10} times...")
-                time.sleep(5)
+                    res = res.get(query)
+            else:
+                return res
+        except json.JSONDecodeError() as e:
+            raise LLMError(f"Query chain error: {e}")
+        except Exception as e:
+            raise APICallError(e)
     
     def generate_batch(self, inputs: List[str]) -> List[str]:
         results = []
@@ -138,35 +132,21 @@ class LLMFromAPI(LLM):
             for future in concurrent.futures.as_completed(futures):
                 results.extend(future.result())
         return results
+
+
+class LLMError(Exception):
+    def __init__(self, message: str) -> None:
+        super(LLMError, self).__init__(message)
+        self.message = message
     
-    def is_feasible(self) -> str:
-        """Check wheter the API invoke can be invoked normally after initialization.
-        
-        Returns:
-            str: result of judgement. if result is "sucess", it means normal access, otherwise underwent error.
-        """
-        payload = json.dumps({
-            "message": [
-                {
-                    "role": "user",
-                    "content": "你好"
-                },
-            ]
-        })
-        headers = {
-            "Content-Type": "application/json"
-        }
-        response = requests.request("POST", self.url, headers=headers, data=payload)
-        if response.status_code != 200:
-            return f"connection error: {response.status_code}"
-        else:
-            try:
-                res = response.json()
-                for query in self.query_chain:
-                    if query.isdigit():
-                        res = res[query]
-                    else:
-                        res = res.get(query)
-            except Exception as e:
-                return f"parsing error or access error: {e}"
-            return "success"
+    def __str__(self) -> str:
+        return f"LLMError: {self.message}"
+
+
+class APICallError(LLMError):
+    def __init__(self, message: str) -> None:
+        super(APICallError, self).__init__(message)
+        self.message = f"API call failed due to {message}"
+    
+    def __str__(self) -> str:
+        return f"APICallError: {self.message}"

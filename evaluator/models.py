@@ -1,3 +1,4 @@
+from sqlalchemy import Nullable
 from evaluator import db
 
 
@@ -58,7 +59,8 @@ class Test(db.Model):
     t_id = db.Column(db.Integer, primary_key=True, autoincrement=True)
     t_name = db.Column(db.String(30), nullable=False)
     t_create_time = db.Column(db.DateTime, default=db.func.now())
-    t_status = db.Column(db.Enum("processing", "finish"), nullable=False, default="processing")
+    t_status = db.Column(db.Enum("processing", "finish","error"), nullable=False, default="processing")
+    t_result_file = db.Column(db.String(64))
     u_id = db.Column(db.Integer, db.ForeignKey("user.u_id"))
     p_id = db.Column(db.Integer, db.ForeignKey("prompt.p_id"))
     q_id = db.Column(db.Integer, db.ForeignKey("question.q_id"))
@@ -71,14 +73,14 @@ class Test(db.Model):
 
 
 # Report table
-class Report(db.Model):
-    __tablename__ = "report"
+# class Report(db.Model):
+#     __tablename__ = "report"
     
-    r_id = db.Column(db.Integer, primary_key=True, autoincrement=True)
-    r_file_path = db.Column(db.String(100), unique=True, nullable=False)
-    r_create_time = db.Column(db.DateTime, default=db.func.now())
-    r_attack = db.Column(db.Integer)
-    r_success = db.Column(db.Integer)
-    t_id = db.Column(db.Integer, db.ForeignKey("test.t_id"))
-    # *:Set to cascade update.
-    test = db.relationship("Test", backref=db.backref("reports", lazy=True, cascade="all, delete-orphan"))
+#     r_id = db.Column(db.Integer, primary_key=True, autoincrement=True)
+#     r_file_path = db.Column(db.String(100), unique=True, nullable=False)
+#     r_create_time = db.Column(db.DateTime, default=db.func.now())
+#     # r_attack = db.Column(db.Integer)
+#     # r_success = db.Column(db.Integer)
+#     t_id = db.Column(db.Integer, db.ForeignKey("test.t_id"))
+#     # *:Set to cascade update.
+#     test = db.relationship("Test", backref=db.backref("reports", lazy=True, cascade="all, delete-orphan"))

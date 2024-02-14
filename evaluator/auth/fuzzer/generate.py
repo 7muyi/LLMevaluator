@@ -49,7 +49,7 @@ def generate_sample(seed_path: str,
     
     initial_seed = []
     
-    with open(seed_path, "r", newline="", encoding="utf-8") as f:
+    with open(seed_path, "r", encoding="utf-8") as f:
         reader = csv.reader(f)
         # skip title row
         next(reader)

@@ -10,6 +10,8 @@ class Config():
     PROMPT_FOLDER = os.path.join(UPLOAD_FOLDER, "prompts")
     QUESTION_FOLDER = os.path.join(UPLOAD_FOLDER, "questions")
     REPORT_FOLDER = os.path.join(UPLOAD_FOLDER, "reports")
+    REPORT_CSV_FOLDER = os.path.join(REPORT_FOLDER, "csv")
+    REPORT_JSON_FOLDER = os.path.join(REPORT_FOLDER, "config")
     MAX_CONTENT_LENGTH = 16 * 1024 * 1024
     DEBUG = True
     
