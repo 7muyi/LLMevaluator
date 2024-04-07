@@ -1,12 +1,14 @@
 import os
-from datetime import datetime
 import time
+from datetime import datetime
 
 import pandas as pd
-from flask import Blueprint, redirect, request, render_template, send_file, url_for, jsonify
+from flask import (Blueprint, jsonify, redirect, render_template, request,
+                   send_file, url_for)
+
+from evaluator import app, db
 
 from ..models import Question, User
-from evaluator import db, app
 
 question = Blueprint("question", __name__)
 
@@ -14,17 +16,7 @@ question = Blueprint("question", __name__)
 def question_list():
     u_id = request.args.get("u_id")
     user = User.query.get(u_id)
-    # *:All users share Admin's files.
-    admin = User.query.get(1)
-    
     question_list = []
-    for question in admin.questions:
-        question_list.append({
-            "q_id": question.q_id,
-            "name": question.q_name,
-            "num of row": question.q_num_row,
-            "creation time": question.q_create_time.strftime("%I:%M %p %b %d"),
-        })
     for question in user.questions:
         question_list.append({
             "q_id": question.q_id,
@@ -32,6 +24,16 @@ def question_list():
             "num of row": question.q_num_row,
             "creation time": question.q_create_time.strftime("%I:%M %p %b %d"),
         })
+    if u_id != 1:
+        # *:All users share Admin's files.
+        admin = User.query.get(1)
+        for question in admin.questions:
+            question_list.append({
+                "q_id": question.q_id,
+                "name": question.q_name,
+                "num of row": question.q_num_row,
+                "creation time": question.q_create_time.strftime("%I:%M %p %b %d"),
+            })
     user = {
         "u_id": user.u_id,
         "u_name": user.u_name,
@@ -50,11 +52,11 @@ def upload():
     u_id = request.form["u_id"]
     filename = request.form["filename"]
     file = request.files.get("file")
-    
+
     unique_file_name = f"{u_id}_{str(int(time.time()))}.csv"
     file_path = os.path.join(app.config["RUN_DIR"], app.config["QUESTION_FOLDER"], unique_file_name)
     file.save(file_path)
-    
+
     # Download successfully
     if os.path.exists(file_path):
         # *:Try different encoding types.
@@ -64,7 +66,7 @@ def upload():
                 df = pd.read_csv(file_path, nrows=10000, encoding=encoding)
             except UnicodeDecodeError:
                 continue
-        
+
         row_count = df.shape[0]  # Get the number of data records.
         del df  # *:Release memory.
 
@@ -76,7 +78,7 @@ def upload():
         )
         db.session.add(new_question)
         db.session.commit()
-    
+
     # *:Ajax is an asynchronous request. Redirect needs to be handled in JavaScript. Here, provide the redirected URL.
     return jsonify(redirect_url=url_for(endpoint="question.question_list", u_id=u_id))
 
@@ -85,7 +87,7 @@ def delete():
     q_id = request.form["q_id"]
     u_id = request.form["u_id"]
     question = Question.query.get(q_id)
-    
+
     if question:
         file_path = os.path.join(app.config["RUN_DIR"], app.config["QUESTION_FOLDER"], question.q_file_path)
         if os.path.exists(file_path):
@@ -110,7 +112,7 @@ def brief_desc_list():
     u_id = request.args.get("u_id")
     user = User.query.get(u_id)
     admin = User.query.get(1)
-    
+
     question_list = []
     for question in admin.questions:
         question_list.append({

@@ -1,17 +1,15 @@
 import csv
 import os
 import time
-from typing import List, TYPE_CHECKING
-
-from click import prompt
+from typing import TYPE_CHECKING, List
 
 from .llms import LLM
-from .utils.predict import Predictor
 from .utils import get_logger, synthesis_message
+from .utils.predict import Predictor
 
 if TYPE_CHECKING:
-    from selection import SelectPolicy
     from mutator import MutatePolicy
+    from selection import SelectPolicy
 
 
 class PromptNode:
@@ -35,10 +33,12 @@ class PromptNode:
     
     def __init__(self,
                  prompt: str,
+                 type: str,
                  parent: "PromptNode" = None,
                  responses: List[str] = None,
                  results: List[int] = None):
         self.prompt: str = prompt
+        self.type: str = type
         self.parent: "PromptNode" = parent
         self.response: List[str] = responses
         self.results: List[int] = results  # The judgement of eacg response.
@@ -79,7 +79,7 @@ class Fuzzer:
         self.questions: List[str] = questions
         self.predictor: Predictor = predictor
         self.prompt_nodes: List[PromptNode] = [
-            PromptNode(prompt) for prompt in initial_seed
+            PromptNode(prompt, type) for (prompt, type) in initial_seed
         ]
         self.initial_prompt_nodes = self.prompt_nodes.copy()
         
@@ -173,7 +173,7 @@ class Fuzzer:
         if prompt_node.num_jailbreak > 0:
             prompt_node.index = len(self.prompt_nodes)
             self.prompt_nodes.append(prompt_node)
-            row = [prompt_node.index, prompt_node.prompt]
+            row = [prompt_node.type, prompt_node.prompt]
             row.extend(prompt_node.response)
             self.writer.writerow(row)
             self.info_logger.info("The mutation is valid.")

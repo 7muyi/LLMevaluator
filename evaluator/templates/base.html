@@ -9,16 +9,14 @@
             margin: 0;
             height: 100%;
         }
-        body {
-            padding-left: 5px;
-        }
         .ActionListItem {
             display: flex;
             align-items: center;
-            border-radius: 0.375rem;
+            border-radius: 0.5rem;
             list-style: none;
-            height: 20%;
+            height: 10%;
             position: relative;
+            padding-left: 5%;
         }
         
         .ActionListItem:hover {
@@ -29,7 +27,7 @@
             display: flex;
             align-items: center;
             background-color: initial;
-            border-radius: 0.375rem;
+            border-radius: 0.5rem;
             position: relative;
             text-align: left;
             transition: background 33.333ms linear;
@@ -43,7 +41,7 @@
             font-family: monospace;
             color: #000000;
             font-size: 18px;
-            margin-left: 15px;
+            margin-left: 20px;
         }
         
         .octicon-person {
@@ -82,7 +80,7 @@
             
             width: 22%;
             height: 100%;
-            background-color: #ffffff;
+            background-color: lightgray;
             margin-right: 40px;
         }
         
@@ -117,7 +115,7 @@
             </div>
             
             <div id="navigation-bar">
-                <ul style="height: 100%; padding-left: 10px;">
+                <ul style="height: 100%; padding-left: 0px;">
                     <li style="border-bottom: 1px solid #bdc1c5; list-style: none;"></li> 
                     <li id="personal_information" class="ActionListItem">
                         <a class="ActionListContent" href="{{ url_for('user.profile', u_id=user.u_id)}}">

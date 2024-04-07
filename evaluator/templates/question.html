@@ -288,6 +288,9 @@ tr{
 
 {% block js %}
 <script>
+    var llmsElement = document.getElementById('question_bank');
+    llmsElement.style.backgroundColor = '#5f9ea0';
+
     function uploadFile() {
         var file = document.getElementById('fileinput').files[0];
 

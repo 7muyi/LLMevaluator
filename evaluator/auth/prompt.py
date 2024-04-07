@@ -1,13 +1,14 @@
 import os
-from datetime import datetime
 import time
+from datetime import datetime
 
-from flask import Blueprint, redirect, request, render_template, send_file, url_for, jsonify
 import pandas as pd
+from flask import (Blueprint, jsonify, redirect, render_template, request,
+                   send_file, url_for)
+
+from evaluator import app, db
 
 from ..models import Prompt, User
-from evaluator import db, app
-
 
 prompt = Blueprint("prompt", __name__)
 
@@ -15,17 +16,7 @@ prompt = Blueprint("prompt", __name__)
 def prompt_list():
     u_id = request.args.get("u_id")
     user = User.query.get(u_id)
-    # *:All users share Admin's files.
-    admin = User.query.get(1)
-    
     prompt_list = []
-    for prompt in admin.prompts:
-        prompt_list.append({
-            "p_id": prompt.p_id,
-            "name": prompt.p_name,
-            "num of row": prompt.p_num_row,
-            "creation time": prompt.p_create_time.strftime("%I:%M %p %b %d"),
-        })
     for prompt in user.prompts:
         prompt_list.append({
             "p_id": prompt.p_id,
@@ -33,7 +24,17 @@ def prompt_list():
             "num of row": prompt.p_num_row,
             "creation time": prompt.p_create_time.strftime("%I:%M %p %b %d"),
         })
-    
+    if u_id != 1:
+        # *:All users share Admin's files.
+        admin = User.query.get(1)
+        for prompt in admin.prompts:
+            prompt_list.append({
+                "p_id": prompt.p_id,
+                "name": prompt.p_name,
+                "num of row": prompt.p_num_row,
+                "creation time": prompt.p_create_time.strftime("%I:%M %p %b %d"),
+            })
+
     user = {
         "u_id": user.u_id,
         "u_name": user.u_name,
@@ -52,11 +53,11 @@ def upload():
     u_id = request.form["u_id"]
     filename = request.form["filename"]
     file = request.files.get("file")
-    
+
     unique_file_name = f"{u_id}_{str(int(time.time()))}.csv"
     file_path = os.path.join(app.config["RUN_DIR"], app.config["PROMPT_FOLDER"], unique_file_name)
     file.save(file_path)
-    
+
     # Download successfully
     if os.path.exists(file_path):
         # *:Try different encoding types.
@@ -66,10 +67,10 @@ def upload():
                 df = pd.read_csv(file_path, nrows=10000, encoding=encoding)
             except UnicodeDecodeError:
                 continue
-        
+
         row_count = df.shape[0]  # Get the number of data records.
         del df  # *:Release memory.
-        
+
         new_prompt = Prompt(
             p_name=filename,
             p_file_path=unique_file_name,
@@ -78,7 +79,7 @@ def upload():
         )
         db.session.add(new_prompt)
         db.session.commit()
-    
+
     # *:Ajax is an asynchronous request. Redirect needs to be handled in JavaScript. Here, provide the redirected URL.
     return jsonify(redirect_url=url_for(endpoint="prompt.prompt_list", u_id=u_id))
 
@@ -111,8 +112,8 @@ def edit():
 def brief_desc_list():
     u_id = request.args.get("u_id")
     user = User.query.get(u_id)
-    admin = User.query.get(1) 
-    
+    admin = User.query.get(1)
+
     prompt_list = []
     for prompt in admin.prompts:
         prompt_list.append({

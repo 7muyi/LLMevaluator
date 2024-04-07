@@ -1,14 +1,13 @@
+import concurrent.futures
 import json
 import time
-import requests
-from typing import List
-import concurrent.futures
 from abc import ABC, abstractmethod
+from typing import List
 
-from ..utils.log_config import get_logger
-
+import requests
 from openai import OpenAI
 
+from ..utils.log_config import get_logger
 
 info_logger = get_logger("info")
 

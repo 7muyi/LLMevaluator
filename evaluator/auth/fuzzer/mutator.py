@@ -1,18 +1,20 @@
 import json
 import random
-from typing import List
 from abc import ABC, abstractmethod
+from typing import List
 
 import numpy as np
 
-from .llms import LLM, OpenAILLM
 from .fuzzer import Fuzzer, PromptNode
-from .utils.extract import extract, clean
-from .utils.template import QUESTION_PLACEHOLDER
+from .llms import LLM, OpenAILLM
+from .utils.extract import clean, extract
 from .utils.log_config import get_logger
-
+from .utils.template import QUESTION_PLACEHOLDER
 
 info_logger = get_logger("info")
+
+SINGLE = "same"
+COMBINE = "combine"
 
 class Mutator(ABC):
     def __init__(self) -> None:
@@ -20,7 +22,7 @@ class Mutator(ABC):
     
     @abstractmethod
     def mutate(self, seeds: str) -> str:
-        pass
+        ...
     
     @property
     def fuzzer(self):
@@ -29,6 +31,10 @@ class Mutator(ABC):
     @fuzzer.setter
     def fuzzer(self, fuzzer: Fuzzer):
         self._fuzzer = fuzzer
+    
+    @abstractmethod
+    def __str__(self) -> str:
+        ...
 
 
 class LLMMutator(Mutator):
@@ -45,6 +51,9 @@ class LLMMutator(Mutator):
     
     def _get_prompt(self, seed: str) -> str:
         raise NotImplementedError("LLMMutator must implement `_get_prompt` method")
+    
+    def __str__(self) -> str:
+        raise NotImplementedError("LLMMutator must implement `__str__` method")
     
     @property
     def model(self):
@@ -73,6 +82,9 @@ class Generate(LLMMutator):
         else:
             output_control = "4. 仅输出生成的新模板，不得输出其他内容。"
         return self.PROMPT.format(output_control=output_control, seed=seed)
+    
+    def __str__(self) -> str:
+        return SINGLE
 
 
 class CrossOver(LLMMutator):
@@ -100,6 +112,9 @@ class CrossOver(LLMMutator):
         return self.PROMPT.format(output_control=output_control,
                                   seed1=seed,
                                   seed2=random.choice(self.fuzzer.prompt_nodes).prompt)
+    
+    def __str__(self) -> str:
+        return COMBINE
 
 
 class Expand(LLMMutator):
@@ -120,6 +135,9 @@ class Expand(LLMMutator):
         else:
             output_control = "4. 仅输出生成的新模板，不得输出其他内容。"
         return self.PROMPT.format(output_control=output_control, seed=seed)
+    
+    def __str__(self) -> str:
+        return SINGLE
 
 
 class Shorten(LLMMutator):
@@ -140,6 +158,9 @@ class Shorten(LLMMutator):
         else:
             output_control = "4. 仅输出生成的新模板，不得输出其他内容。"
         return self.PROMPT.format(output_control=output_control, seed=seed)
+    
+    def __str__(self) -> str:
+        return SINGLE
 
 
 class Rephrase(LLMMutator):
@@ -160,11 +181,17 @@ class Rephrase(LLMMutator):
         else:
             output_control = "4. 仅输出生成的新模板，不得输出其他内容。"
         return self.PROMPT.format(output_control=output_control, seed=seed)
+    
+    def __str__(self) -> str:
+        return SINGLE
 
 
-class Embed(LLMMutator):
+class Embed(Mutator):
     def mutate(self, seed: str) -> str:
         return seed.replace(QUESTION_PLACEHOLDER, random.choice(self.fuzzer.prompt_nodes).prompt)
+    
+    def __str__(self) -> str:
+        return COMBINE
 
 
 class MutatePolicy:
@@ -190,6 +217,7 @@ class MutatePolicy:
         for mutator in self.mutators:
             mutator.fuzzer = fuzzer
 
+
 class MutateRandomSinglePolicy(MutatePolicy):
     """random mutation
     
@@ -211,13 +239,14 @@ class MutateRandomSinglePolicy(MutatePolicy):
         info_logger.info(f"The selected mutator: {mutator.__class__.__name__}")
         result =  mutator.mutate(prompt_node.prompt)
         result = clean(result)
+        type = prompt_node.type if mutator == SINGLE else COMBINE
         if isinstance(mutator, LLMMutator) and result:
             if isinstance(mutator.model, OpenAILLM):
                 start, end = "{" , "}"
             else:
                 start, end = "<example>", "</example>"
             result = extract(result, start, end)
-        return PromptNode(result, parent=prompt_node)
+        return PromptNode(result, type, parent=prompt_node)
     
     def _json2content(self, input: str) -> str:
         try:

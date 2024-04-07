@@ -1,21 +1,23 @@
-import os
 import csv
 import json
-from shlex import join
+import os
 import threading
 from typing import Dict
+
 import pandas as pd
+from flask import (Blueprint, config, jsonify, redirect, render_template,
+                   request, send_file, url_for)
 
-from flask import Blueprint, config, jsonify, redirect, request, render_template, send_file, url_for
+from evaluator import app, db
 
-from .fuzzer.mutator import MutateRandomSinglePolicy, Generate, Shorten, Rephrase, CrossOver, Embed, Expand
-from .fuzzer.selection import RandomSelectPolicy, RoundRobinSelectPolicy, MCTSExploreSelectPolicy
-from .fuzzer.llms.llm import LLMFromAPI, OpenAILLM
-from .fuzzer.utils.predict import LLMPredictor
+from ..models import LLM, Prompt, Question, Test, User
 from .fuzzer.fuzzer import Fuzzer
-from ..models import Prompt, Test, User, Question, LLM
-from evaluator import db, app
-
+from .fuzzer.llms.llm import LLMFromAPI, OpenAILLM
+from .fuzzer.mutator import (CrossOver, Embed, Expand, Generate,
+                             MutateRandomSinglePolicy, Rephrase, Shorten)
+from .fuzzer.selection import (MCTSExploreSelectPolicy, RandomSelectPolicy,
+                               RoundRobinSelectPolicy)
+from .fuzzer.utils.predict import LLMPredictor
 
 test = Blueprint("test", __name__)
 
@@ -147,7 +149,7 @@ def fuzzing(t_id, seed_path, question_path, number,
         next(reader)
         
         for row in reader:
-            initial_seed.append(row[1])
+            initial_seed.append((row[2], row[1]))
     question_list = []
     
     with open(question_path, "r", newline="", encoding="utf-8") as f:

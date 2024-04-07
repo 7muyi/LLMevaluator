@@ -409,7 +409,10 @@ tr{
 {% endblock %}
 
 {% block js %}
-<script> 
+<script>
+    var llmsElement = document.getElementById('test');
+    llmsElement.style.backgroundColor = '#5f9ea0';
+
     $.ajax({
         url: "{{ url_for('llm.brief_desc_list', u_id=user.u_id) }}",
         type: 'get',

@@ -1,9 +1,10 @@
 import random
-import numpy as np
-from typing import List
 from abc import ABC, abstractmethod
+from typing import List
 
-from .fuzzer import PromptNode, Fuzzer
+import numpy as np
+
+from .fuzzer import Fuzzer, PromptNode
 
 
 class SelectPolicy(ABC):
@@ -93,6 +94,54 @@ class MCTSExploreSelectPolicy(SelectPolicy):
         # Iterate until the node is leaf
         while len(cur.children) > 0:
             # Exist randomly to avoid selecting the leaf every time to increase diversity.
+            if np.random.rand() < self.alpha:  
+                break
+            
+            cur = max(cur.children, key=uct_score)
+            cur.visited_num += 1
+            self.select_path.append(cur)
+        
+        self.last_choice_index = cur.index
+        return cur
+    
+    def update(self, prompt_node: PromptNode):
+        succ_num = prompt_node.num_jailbreak
+        level = self.fuzzer.prompt_nodes[self.last_choice_index].level
+        
+        reward = succ_num / len(self.fuzzer.questions)
+        for prompt_node in self.select_path:
+            self.rewards[prompt_node.index] += reward * max(self.beta, (1 - 0.1 * level))
+
+
+
+class MCTSExploreSelectPolicy(SelectPolicy):
+    def __init__(self,
+                 ratio: float = 0.5,
+                 alpha: float = 0.1,
+                 beta: float = 0.2,) -> None:
+        super(MCTSExploreSelectPolicy, self).__init__()
+        self.ratio = ratio
+        self.alpha = alpha
+        self.beta = beta
+        
+        self.step = 0
+        self.select_path = []
+        self.rewards = []
+    
+    def select(self) -> PromptNode:
+        self.step += 1
+        if len(self.fuzzer.prompt_nodes) > len(self.rewards):
+            self.rewards.extend([0 for _ in range(len(self.fuzzer.prompt_nodes) - len(self.rewards))])
+        
+        self.select_path.clear()
+        def uct_score(prompt_node: PromptNode) -> float:
+            return (
+                self.rewards[prompt_node.index] / (prompt_node.visited_num + 1) +
+                self.ratio * np.sqrt(2 * np.log(self.step)) / (prompt_node.visited_num + 0.01)
+            )
+        cur = max(self.fuzzer.initial_prompt_nodes, key=uct_score)
+        self.select_path.append(cur)
+        while len(cur.children) > 0:
             if np.random.rand() < self.alpha:  
                 break
             

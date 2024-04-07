@@ -2,10 +2,9 @@ import json
 import logging
 import logging.config
 
-
-with open("D:/MyWorkspace/project/LLMevaluator/evaluator/auth/fuzzer/config/logging_config.json", "r") as f:
+with open("D:/Project/LLMevaluator/evaluator/auth/fuzzer/config/logging_config.json", "r") as f:
     config = json.load(f)
-    
+
 logging.config.dictConfig(config)
 
 def get_logger(level: str = "debug"):
