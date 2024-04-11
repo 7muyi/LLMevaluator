@@ -12,7 +12,7 @@ from evaluator import app, db
 
 from ..models import LLM, Prompt, Question, Test, User
 from .fuzzer.fuzzer import Fuzzer
-from .fuzzer.llms.llm import LLMFromAPI, OpenAILLM
+from .fuzzer.llms import LLMFromAPI, OpenAILLM, ZhipuLLM
 from .fuzzer.mutator import (CrossOver, Embed, Expand, Generate,
                              MutateRandomSinglePolicy, Rephrase, Shorten)
 from .fuzzer.selection import (MCTSExploreSelectPolicy, RandomSelectPolicy,
@@ -121,7 +121,7 @@ def fuzzing(t_id, seed_path, question_path, number,
             access_token=tar_model["access_token"]
         )
     
-    model = tar_model
+    mutate_model = predict_model = ZhipuLLM()
     # *: Openai API expired
     # model = OpenAILLM(mut_model_name, "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")
     
@@ -139,10 +139,9 @@ def fuzzing(t_id, seed_path, question_path, number,
         max_jailbreak = -1
         max_iteration = number
     
-    predictor = LLMPredictor(model)
+    predictor = LLMPredictor(predict_model)
     
     initial_seed = []
-    
     with open(seed_path, "r", newline="", encoding="utf-8") as f:
         reader = csv.reader(f)
         # skip title row
@@ -169,7 +168,7 @@ def fuzzing(t_id, seed_path, question_path, number,
         initial_seed=initial_seed,
         mutate_policy=MutateRandomSinglePolicy(
             [Generate(), Shorten(), Expand(), Rephrase(), CrossOver()],
-            model
+            mutate_model
         ),
         select_policy=select,
         max_jailbreak=max_jailbreak,

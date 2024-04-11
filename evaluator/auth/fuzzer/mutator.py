@@ -239,7 +239,7 @@ class MutateRandomSinglePolicy(MutatePolicy):
         info_logger.info(f"The selected mutator: {mutator.__class__.__name__}")
         result =  mutator.mutate(prompt_node.prompt)
         result = clean(result)
-        type = prompt_node.type if mutator == SINGLE else COMBINE
+        type = prompt_node.type if str(mutator) == SINGLE else COMBINE
         if isinstance(mutator, LLMMutator) and result:
             if isinstance(mutator.model, OpenAILLM):
                 start, end = "{" , "}"
