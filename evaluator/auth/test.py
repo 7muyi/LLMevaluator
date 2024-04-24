@@ -139,7 +139,7 @@ def fuzzing(t_id, seed_path, question_path, number,
             tar_model, select_policy, stop_condition,
             mut_model_name: str = "gpt-3.5-turbo"):
     if tar_model["name"] == "gpt-3.5-turbo":
-        tar_model = OpenAILLM(tar_model["name"], "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")
+        tar_model = OpenAILLM(tar_model["name"], "Your API Key")
     else:
         kwargs = {} if not tar_model["kwargs"] else parse_string_to_dict(tar_model["kwargs"])
         tar_model = LLMFromAPI(
@@ -152,8 +152,6 @@ def fuzzing(t_id, seed_path, question_path, number,
         )
     
     mutate_model = predict_model = ZhipuLLM()
-    # *: Openai API expired
-    # model = OpenAILLM(mut_model_name, "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")
     
     if select_policy == "Random":
         select = RandomSelectPolicy()

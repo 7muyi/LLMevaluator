@@ -7,7 +7,7 @@ from .llm import LLM
 
 class ZhipuLLM(LLM):
     def __init__(self):
-        self.client = ZhipuAI(api_key="3e0482be9a44f13e121343b376885b91.iuTyirEim6KxB6a1")
+        self.client = ZhipuAI(api_key="Your API Key")
     
     def generate(self, input: str) -> str:
         response = self.client.chat.completions.create(
