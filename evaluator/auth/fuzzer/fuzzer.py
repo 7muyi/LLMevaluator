@@ -1,16 +1,15 @@
 import csv
 import os
 import time
-from typing import List, TYPE_CHECKING
-import warnings
+from typing import TYPE_CHECKING, List
 
-from .llms.llm import LLM, LocalLLM
+from .llms import LLM
+from .utils import get_logger, synthesis_message
 from .utils.predict import Predictor
-from .utils.template import synthesis_message
 
 if TYPE_CHECKING:
-    from selection import SelectPolicy
     from mutator import MutatePolicy
+    from selection import SelectPolicy
 
 
 class PromptNode:
@@ -34,15 +33,15 @@ class PromptNode:
     
     def __init__(self,
                  prompt: str,
+                 type: str,
                  parent: "PromptNode" = None,
-                 mutator: str = None,
                  responses: List[str] = None,
                  results: List[int] = None):
         self.prompt: str = prompt
+        self.type: str = type
         self.parent: "PromptNode" = parent
-        self.mutator: str = mutator
         self.response: List[str] = responses
-        self.results: List[int] = results
+        self.results: List[int] = results  # The judgement of eacg response.
         
         self.visited_num: int = 0
         self.children: List["PromptNode"] = []
@@ -74,14 +73,13 @@ class Fuzzer:
                  select_policy: "SelectPolicy",
                  max_jailbreak: int = -1,
                  max_iteration: int = -1,
-                 energy: int = 1,
                  result_file: str = None,
                  generate_in_batch: bool = False):
         self.target: LLM = target
         self.questions: List[str] = questions
         self.predictor: Predictor = predictor
         self.prompt_nodes: List[PromptNode] = [
-            PromptNode(prompt) for prompt in initial_seed
+            PromptNode(prompt, type) for (prompt, type) in initial_seed
         ]
         self.initial_prompt_nodes = self.prompt_nodes.copy()
         
@@ -97,28 +95,27 @@ class Fuzzer:
         self.max_jailbreak = len(questions) if max_jailbreak == -1 and max_iteration == -1 else max_jailbreak
         self.max_iteration = max_iteration
         
-        self.energy = energy
-        
         if result_file is None:
             result_file = os.path.join(f"results-{time.strftime('%m-%d-%H-%M', time.localtime())}.csv")
         
-        self.raw_fp = open(result_file, "w", buffering=1, encoding="utf-8")
-        self.writter = csv.writer(self.raw_fp)
-        self.writter.writerow(
+        self.raw_fp = open(result_file, "w", newline="", encoding="utf-8")
+        self.writer = csv.writer(self.raw_fp)
+        self.writer.writerow(
             ["index", "prompt", "response"]
         )
-        
+        self.raw_fp.flush()
         self.generate_in_batch = False
         if len(self.questions) > 0 and generate_in_batch is True:
             self.generate_in_batch = True
-            if isinstance(self.target, LocalLLM):
-                warnings.warn(
-                    "IMPORTANT! Hugging face inference with batch generation has the problem of consistency due to pad tokens. We do not suggest doing so and you may experience (1) degraded output quality due to long padding tokens, (2) inconsistent responses due to different number of padding tokens during reproduction. You should turn off generate_in_batch or use vllm batch inference.")
+        
+        self.info_logger = get_logger("info")
+        self.debug_logger = get_logger("debug")
         
         self.setup()
     
     def setup(self):
         self.select_policy.fuzzer = self
+        self.mutate_policy.fuzzer = self
     
     def is_stop(self):
         checks = [
@@ -131,45 +128,57 @@ class Fuzzer:
         )
     
     def run(self):
-        while not self.is_stop():
-            seed = self.select_policy.select()
-            mutated_results = self.mutate_policy.mutate_single(seed, self.prompt_nodes)
-            self.evaluate(mutated_results)
-            self.update(mutated_results)
-            
-        self.raw_fp.close()
-        return self.cur_jailbreak, self.cur_iteration
+        self.info_logger.info("Fuzzing Test Start!")
+        try:
+            while not self.is_stop():
+                self.info_logger.info(f"Iteartion {self.cur_iteration}: {self.cur_jailbreak}")
+                seed = self.select_policy.select()
+                self.info_logger.info(f"The selected node:\n{seed.prompt}")
+                mutated_result = self.mutate_policy.mutate_single(seed)
+                self.info_logger.info(f"The mutation:\n{mutated_result.prompt}")
+                self.evaluate(mutated_result)
+                self.update(mutated_result)
+        except Exception as e:
+            self.info_logger.info(f"Fuzzing test undergo an error: {e}")
+            raise e
+        else:
+            self.info_logger.info("Fuzzing test finish!")
+        finally:
+            self.raw_fp.close()
     
-    def evaluate(self, prompt_nodes: List[PromptNode]):
-        for prompt_node in prompt_nodes:
-            responses = []
-            messages = []
-            for question in self.questions:
-                message = synthesis_message(question, prompt_node.prompt)
-                if message is None:  # The prompt is not valid
-                    prompt_node.response = []
-                    prompt_node.results = []
-                    break
-                if not self.generate_in_batch:
-                    response = self.target.generate(message)
-                    print(response[0])
-                    responses.append(response[0] if isinstance(response, list) else response)
-                else:
-                    messages.append(message)
+    def evaluate(self, prompt_node: PromptNode):
+        responses = []
+        messages = []
+        for question in self.questions:
+            message = synthesis_message(question, prompt_node.prompt)
+            if message is None:  # The prompt is not valid
+                prompt_node.response = []
+                prompt_node.results = []
+                break
+            if not self.generate_in_batch:
+                response = self.target.generate(message)
+                self.info_logger.debug(f"The response for question {question}: \n{response}")
+                if response:
+                    responses.append(response)
             else:
-                if self.generate_in_batch:
-                    responses = self.target.generate_batch(messages)
-
-                prompt_node.response = responses 
-                prompt_node.results = self.predictor.predict(responses)
+                messages.append(message)
+        else:
+            if self.generate_in_batch:
+                responses = self.target.generate_batch(messages)
+            
+            prompt_node.response = responses
+            prompt_node.results = self.predictor.predict_batch(responses)
     
-    def update(self, prompt_nodes: List[PromptNode]):
+    def update(self, prompt_node: PromptNode):
         self.cur_iteration += 1
-        for prompt_node in prompt_nodes:
-            if prompt_node.num_jailbreak > 0:
-                prompt_node.index = len(self.prompt_nodes)
-                self.prompt_nodes.append(prompt_node)
-                self.writter.writerow([prompt_node.index, prompt_node.prompt, prompt_node.response])
-            self.cur_jailbreak += prompt_node.num_jailbreak
-        
-        self.select_policy.update(prompt_nodes)
+        if prompt_node.num_jailbreak > 0:
+            prompt_node.index = len(self.prompt_nodes)
+            self.prompt_nodes.append(prompt_node)
+            row = [prompt_node.type, prompt_node.prompt]
+            row.extend(prompt_node.response)
+            self.writer.writerow(row)
+            self.info_logger.info("The mutation is valid.")
+        else:
+            self.info_logger.info("The mutation is invalid.")
+        self.cur_jailbreak += prompt_node.num_jailbreak
+        self.select_policy.update(prompt_node)

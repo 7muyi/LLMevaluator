@@ -1,0 +1,38 @@
+{
+    "version": 1,
+    "formatters": {
+        "standard": {
+            "format": "%(asctime)s - %(name)s - %(message)s"
+        },
+        "debug": {
+            "format": "%(asctime)s - %(filename)s:%(lineno)d - %(levelname)s - %(message)s"
+        }
+    },
+    "handlers": {
+        "console": {
+            "class": "logging.StreamHandler",
+            "level": "DEBUG",
+            "formatter": "debug",
+            "stream": "ext://sys.stdout"
+        },
+        "file": {
+            "class": "logging.FileHandler",
+            "level": "INFO",
+            "formatter": "standard",
+            "filename": "evaluator/auth/fuzzer/log/info.log",
+            "mode": "a"
+        }
+    },
+    "loggers": {
+        "debug": {
+            "handlers": ["console"],
+            "level": "DEBUG",
+            "propagate": false
+        },
+        "info": {
+            "handlers": ["console", "file"],
+            "level": "DEBUG",
+            "propagate": false
+        }
+    }
+}

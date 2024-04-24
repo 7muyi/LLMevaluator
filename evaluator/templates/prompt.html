@@ -155,11 +155,11 @@ tr{
     position: absolute;
     right: 20.5%;
     background-color: #ffffff;
-    transform: translateX(50%);
+    transform: translateX(40%);
     border: 1px solid rgba(31, 35, 41, 0.15);
     border-radius: 6px;
-    height: 60px;
-    width: 80px;
+    height: 90px;
+    width: 110px;
 }
 
 .menu ul {
@@ -170,7 +170,7 @@ tr{
 .menu-li {
     display: flex;
     flex-direction: column;
-    height: 50%;
+    height: 33%;    
     width: 100%;
     align-items: left;
     list-style: none;
@@ -220,11 +220,11 @@ tr{
             <tr>
                 {% if prompts %}
                     {% for col in prompts[0].keys() %}
-                        {% if col != "p_id" %}
+                        {% if (col != "p_id" and col != "path") %}
                         <th id="col{{ loop.index0 }}"> {{ col }} </th>
                         {% endif %}
                     {% endfor %}
-                    <th id="col{{ prompts[0].keys()|length }}">Operate</th>
+                    <th id="col{{ prompts[0].keys()|length - 1}}"> Operate </th>
                 {% endif %}
             </tr>
         </thead>
@@ -232,7 +232,7 @@ tr{
             {% for prompt in prompts %}
             <tr>
                 {% for key, value in prompt.items() %}
-                    {% if key != "p_id" %}
+                    {% if key != "p_id" and key != "path" %}
                     <th style="vertical-align: middle;">
                         <div style="display: flex; flex-direction: row; vertical-align: middle;">
                             {% if loop.index0 == 1 %}
@@ -248,6 +248,12 @@ tr{
                         <img src="{{ url_for('static', filename='other.png') }}" style="width: 20px; margin-right: 0;">
                         <div class="menu">
                             <ul style="height: 100%;">
+                                <li class="menu-li">
+                                    <a class="menu-content" href="{{ url_for('prompt.download_prompt', filepath=prompt.path) }}" download="{{ prompt.name }}.csv" style="text-decoration: none;">
+                                        <img src="{{ url_for('static', filename='download.png') }}">
+                                        <span>Download</span>
+                                    </a>
+                                </li>
                                 <li class="menu-li" onclick="var form = document.getElementById('form-edit-box'); form.style.visibility='visible';form.querySelector('#p_id').value={{ prompt.p_id }}; form.querySelector('#p_name').value='{{ prompt.name }}';form.querySelector('#p_name').placeholder='{{ prompt.name }}'">
                                     <div class="menu-content">
                                         <img src="{{ url_for('static', filename='edit_grey.png') }}">
@@ -289,6 +295,8 @@ tr{
 
 {% block js %}
 <script>
+    var llmsElement = document.getElementById('prompt_bank');
+    llmsElement.style.backgroundColor = '#5f9ea0';
     function uploadFile() {
         var file = document.getElementById('fileinput').files[0];
 

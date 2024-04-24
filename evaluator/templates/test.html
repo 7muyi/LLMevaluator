@@ -96,12 +96,22 @@ tr{
     font-weight: lighter;
 }
 
+#error-info {
+    word-wrap: break-word;
+    border-radius: 6px;
+    border-color: #d0d7de;
+    border-style: solid;
+    border-width: 1px;
+    background-color: #f6f8fa;
+    color: #8c95a2;
+    font-family: monospace;
+    font-size: 15px;
+}
+
 .template-box {
     visibility: hidden;
     display: flex;
     flex-direction: column;
-    width: 410px;
-    height: 480px;
     position: absolute;
     top: 50%;
     left: 50%;
@@ -130,7 +140,7 @@ tr{
 
 .template-box button {
     position: absolute;
-    bottom: 3%;
+    bottom: 2%;
     right: 50%;
     transform: translateX(50%);
     cursor: pointer;
@@ -196,7 +206,6 @@ tr{
     width: 100%;
     align-items: left;
     list-style: none;
-
     font-family: monospace;
     font-size: 15px;
     font-weight: lighter;
@@ -276,9 +285,31 @@ tr{
                             </ul>
                         </div>
                     </div>
-                    {% else %}
+                    {% elif test.status == "processing" %}
                     <div class="other-op">
                         <img src="{{ url_for('static', filename='processing.png') }}" style="width: 20px; margin-right: 0;">
+                    </div>
+                    {% elif test.status == "error" %}
+                    <div class="other-op" onclick="showMenu(this)">
+                        <img src="{{ url_for('static', filename='other_red.png') }}" style="width: 20px; margin-right: 0;">
+                        <div class="menu">
+                            <ul style="height: 100%;">
+                                <li class="menu-li" onclick="showErrorBox({{ test.t_id }})">
+                                    <div class="menu-content">
+                                        <img src="{{ url_for('static', filename='report.png') }}">
+                                        <span>Detail</span>
+                                    </div>
+                                </li>
+                                <li class="menu-li" onclick="this.firstElementChild.submit();">
+                                    <form id="form-del" method="post" class="menu-content" action="{{ url_for('test.delete') }}">
+                                        <input type="hidden" name="t_id" value="{{ test.t_id }}">
+                                        <input type="hidden" name="u_id" value="{{ user.u_id }}">
+                                        <img src="{{ url_for('static', filename='delete.png') }}">
+                                        <span>Delete</span>
+                                    </form>
+                                </li>
+                            </ul>
+                        </div>
                     </div>
                     {% endif %}
                 </th>
@@ -286,7 +317,7 @@ tr{
             {% endfor %}
         </tbody>
     </table>
-    <form id="add-test-box" class="template-box" method="post" action="{{ url_for('test.detect') }}">
+    <form id="add-test-box" class="template-box" style="width: 410px; height: 480px;" method="post" action="{{ url_for('test.detect') }}">
         <input type="hidden" name="u_id" value="{{ user.u_id }}">
         <label class="template-title">Vulnerability detection</label>
         <div style="margin-top: 65px;">
@@ -328,7 +359,7 @@ tr{
         
         <div>
             <label class="label1">Num</label>
-            <input class="label2" style="width: 175px;" name="num" placeholder="num">
+            <input class="label2" style="width: 175px;" name="num" placeholder="num" value="10">
         </div>
         
         <div>
@@ -336,31 +367,61 @@ tr{
             <button type="button" style="right: 32%" onclick="showAddBox()">Cancel</button>
         </div>
     </form>
-    <div id="report-box" class="template-box" style="width: 450px; height: 210px;">
+    <div id="report-box" class="template-box" style="width: 450px; height: auto;">
         <label class="template-title">Vulnerability report</label>
         
         <div style="margin-top: 65px;">
-            <label class="label1">Number of attack</label>
-            <label class="label2" id="report-attack" style="width: 150px; line-height: 30px;"></label>
-        </div>
-        
-        <div>
             <label class="label1">Number of vulnerability</label>
             <label class="label2" id="report-vulnerability" style="width: 150px; line-height: 30px;"></label>
         </div>
         
-        <div>
-            <a id="download" href="{{ url_for('prompt.download', filename='file/prompt_template.csv') }}" download="report.csv" style="text-decoration: none;">
+        <div id="example" style="margin: 0 0 0 0">
+            <div style="display: flex; flex-direction: column;">
+                <label class="label1" style="align-self: flex-start;">Example</label>
+                <div style="display: flex; align-self: flex-start; flex-direction: column; margin: 5px 0 0 0;">
+                    <label class="label1" style="align-self: flex-start; width: 150px; line-height: 30px;">prompt</label>
+                    <textarea class="label2" id="example-prompt" style="height: 170px; width:395px; overflow: auto;"></textarea>
+                </div>
+                <div style="display: flex; align-self: flex-start; flex-direction: column; margin: 5px 0 0 0;">
+                    <label class="label1" style="align-self: flex-start; width: 150px; line-height: 30px;">response</label>
+                    <textarea class="label2" id="example-response" style="height: 170px; width: 395px; overflow: auto   ;"></textarea>
+                </div>
+            </div>
+        </div>
+        
+        <div id="no_example" style="margin: 0 0 0 0;">
+            <div style="display: flex; flex-direction: column;">
+                <label class="label1" style="align-self: flex-start; color: red;">No vulnerabilities detected</label>
+            </div>
+        </div>
+        
+        <div style="height: 30px;">
+            <a id="download" download="report.csv" style="text-decoration: none;">
                 <button type="button" style="right: 68%" onclick="showReportBox()">Download</button>
             </a>
             <button type="button" style="right: 32%" onclick="showReportBox()">Cancel</button>
+        </div>
+    </div>
+    
+    <div id="error-box" class="template-box" style="width: 450px">
+        <label class="template-title">Error detail</label>
+        
+        <div style="margin: 60px 15px 15px 15px">
+            <label id="error-info"></label>
+        </div>
+        
+        <div style="height: 20px;">
+            <button type="button" style="right: 50%" onclick="showErrorBox()">Confirm</button>
         </div>
     </div>
 </div>
 {% endblock %}
 
 {% block js %}
-<script> 
+<script>
+    var llmsElement = document.getElementById('test');
+    llmsElement.style.backgroundColor = '#5f9ea0';
+
     $.ajax({
         url: "{{ url_for('llm.brief_desc_list', u_id=user.u_id) }}",
         type: 'get',
@@ -400,22 +461,45 @@ tr{
         }
     });
     
+    // function showMenu(clicked) {
+    //     var div_op_list = document.querySelectorAll(".other-op");
+    //     div_op_list.forEach(function(div_op) {
+    //         var menu = div_op.getElementsByClassName("menu")[0];
+    //         if (menu) {
+    //             if(div_op != clicked) {
+    //                 menu.style.visibility = "hidden";
+    //             }else{
+    //                 if (menu.style.visibility == "hidden") {
+    //                     menu.style.visibility = "visible";
+    //                 } else{
+    //                     menu.style.visibility = "hidden";
+    //                 }
+    //             }
+    //         }
+    //     })
+    // };
     function showMenu(clicked) {
         var div_op_list = document.querySelectorAll(".other-op");
+        var clickedMenu = clicked.getElementsByClassName("menu")[0];
+        
+        if (clickedMenu) {
+            if (clickedMenu.style.visibility === "hidden") {
+                clickedMenu.style.visibility = "visible";
+            } else {
+                clickedMenu.style.visibility = "hidden";
+            }
+        }
+        
         div_op_list.forEach(function(div_op) {
-            var menu = div_op.getElementsByClassName("menu")[0];
-            if(div_op != clicked) {
-                menu.style.visibility = "hidden";
-            }else{
-                if (menu.style.visibility == "hidden") {
-                    menu.style.visibility = "visible";
-                } else{
+            if (div_op !== clicked) {
+                var menu = div_op.getElementsByClassName("menu")[0];
+                if (menu) {
                     menu.style.visibility = "hidden";
                 }
             }
-        })
+        });
     };
-    
+
     function showAddBox() {
         var add_box = document.getElementById('add-test-box')
         if (add_box.style.visibility == 'hidden') {
@@ -435,10 +519,19 @@ tr{
                     t_id: t_id,
                 },
                 success: function(response) {
-                    var label1 = document.getElementById('report-attack');
-                    label1.textContent = response.attack;
-                    var label2 = document.getElementById('report-vulnerability');
-                    label2.textContent = response.success;
+                    var label1 = document.getElementById('report-vulnerability');
+                    label1.innerText = response.num_vulnerability;
+                    if(response.num_vulnerability == "0"){
+                        document.getElementById('no_example').style.display = "block"
+                        document.getElementById('example').style.display = 'none';
+                    } else {
+                        document.getElementById('example').style.display = "block"
+                        document.getElementById('no_example').style.display = 'none';
+                        var label2 = document.getElementById('example-prompt');
+                        label2.value = response.example.prompt;
+                        var label3 = document.getElementById('example-response');
+                        label3.value = response.example.response;
+                    }
                 }
             });
             var link = document.getElementById('download');
@@ -448,5 +541,26 @@ tr{
             report_box.style.visibility = 'hidden';
         }
     }
+    
+    function showErrorBox(t_id) {
+        var report_box = document.getElementById('error-box');
+        if (report_box.style.visibility == 'hidden') {
+            $.ajax({
+                url: "{{ url_for('test.report') }}",
+                type: 'get',
+                data: {
+                    t_id: t_id,
+                },
+                success: function(response) {
+                    var label = document.getElementById('error-info');
+                    label.innerText = response.error;
+                }
+            });
+            report_box.style.visibility = 'visible';
+        } else {
+            report_box.style.visibility = 'hidden';
+        }
+    }
+
 </script>
 {% endblock %}

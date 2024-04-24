@@ -1,18 +1,24 @@
-import os
 import csv
-import time
+import json
+import os
+import re
 import threading
-from datetime import datetime
+from typing import Dict
 
-from flask import Blueprint, config, jsonify, redirect, request, render_template, send_file, url_for
+import pandas as pd
+from flask import (Blueprint, config, jsonify, redirect, render_template,
+                   request, send_file, url_for)
 
-from .fuzzer.mutator import MutateRandomSinglePolicy, OpenAIMutator
-from .fuzzer.selection import RandomSelectPolicy, RoundRobinSelectPolicy, MCTSExploreSelectPolicy
-from .fuzzer.llms.llm import LocalLLM, OpenAILLM
-from .fuzzer.utils.predict import OpenAIPredictor
+from evaluator import app, db
+
+from ..models import LLM, Prompt, Question, Test, User
 from .fuzzer.fuzzer import Fuzzer
-from ..models import Prompt, Report, Test, User, Question, LLM
-from evaluator import db, app
+from .fuzzer.llms import LLMFromAPI, OpenAILLM, ZhipuLLM
+from .fuzzer.mutator import (CrossOver, Embed, Expand, Generate,
+                             MutateRandomSinglePolicy, Rephrase, Shorten)
+from .fuzzer.selection import (MCTSExploreSelectPolicy, RandomSelectPolicy,
+                               RoundRobinSelectPolicy)
+from .fuzzer.utils.predict import LLMPredictor
 
 test = Blueprint("test", __name__)
 
@@ -46,11 +52,14 @@ def delete():
     test = Test.query.get(t_id)
     
     if test:
-        report = test.reports[0]
-        file_path = os.path.join(app.config["RUN_DIR"], app.config["REPORT_FOLDER"], report.r_file_path)
-        if os.path.exists(file_path):
-            os.remove(file_path)
-        
+        result_path = os.path.join(app.config["RUN_DIR"], app.config["REPORT_JSON_FOLDER"], test.t_result_file)
+        if test.t_status == "finish":
+            with open(result_path, "r", encoding="utf-8") as f:
+                data = json.load(f)
+                file_path = data.get("file_path")
+            if os.path.exists(os.path.join(app.config["RUN_DIR"], file_path)):
+                os.remove(file_path)
+        os.remove(result_path)
         db.session.delete(test)
         db.session.commit()
     return redirect(url_for("test.test_list", u_id=u_id))
@@ -91,25 +100,60 @@ def detect():
                 "url": llm.l_url,
                 "return_format": llm.l_return_format,
                 "access_token": llm.l_access_token,
+                "auth_method": llm.l_auth_method,
+                "kwargs": llm.l_kwargs,
             },
         "select_policy": select_strategy,
         "stop_condition": stop_condition,
-    
+        "mut_model_name": "gpt-4",
     })
     thread.start()
     
     return redirect(url_for("test.test_list", u_id=u_id))
 
-def fuzzing(t_id, seed_path, question_path, number, tar_model, select_policy, stop_condition, 
+def parse_string_to_dict(input_str):
+    """
+    Parses a string of the form "key1:value1,key2:value2" into a dictionary.
+    
+    Args:
+    input_str (str): A string containing key-value pairs separated by commas and colon.
+    
+    Returns:
+    dict: A dictionary containing the parsed key-value pairs.
+    """
+    # Split the input string by commas to separate key-value pairs
+    pairs = input_str.split(',')
+    
+    # Create a dictionary from the split key-value pairs
+    result_dict = {}
+    for pair in pairs:
+        if ':' in pair:
+            key, value = pair.split(':', 1)
+            result_dict[key] = value
+        else:
+            result_dict[pair] = None  # Handle cases with no explicit value, not expected here but for completeness
+    
+    return result_dict
+
+def fuzzing(t_id, seed_path, question_path, number,
+            tar_model, select_policy, stop_condition,
             mut_model_name: str = "gpt-3.5-turbo"):
     if tar_model["name"] == "gpt-3.5-turbo":
-        tar_model = OpenAILLM(tar_model["name"], "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")
+        tar_model = OpenAILLM(tar_model["name"], "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")
     else:
-        tar_model = LocalLLM(url=tar_model["url"],
-                             return_format=tar_model["return_format"],
-                             access_token=tar_model["access_token"])
+        kwargs = {} if not tar_model["kwargs"] else parse_string_to_dict(tar_model["kwargs"])
+        tar_model = LLMFromAPI(
+            model_name_or_path=tar_model["name"],
+            url=tar_model["url"],
+            return_format=tar_model["return_format"],
+            access_token=tar_model["access_token"],
+            headers_or_url=tar_model["auth_method"],
+            **kwargs
+        )
     
-    mut_model = OpenAILLM(mut_model_name, "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")
+    mutate_model = predict_model = ZhipuLLM()
+    # *: Openai API expired
+    # model = OpenAILLM(mut_model_name, "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")
     
     if select_policy == "Random":
         select = RandomSelectPolicy()
@@ -125,17 +169,16 @@ def fuzzing(t_id, seed_path, question_path, number, tar_model, select_policy, st
         max_jailbreak = -1
         max_iteration = number
     
-    predictor = OpenAIPredictor("gpt-3.5-turbo", "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")
+    predictor = LLMPredictor(predict_model)
     
     initial_seed = []
-    
     with open(seed_path, "r", newline="", encoding="utf-8") as f:
         reader = csv.reader(f)
         # skip title row
         next(reader)
         
         for row in reader:
-            initial_seed.append(row[1])
+            initial_seed.append((row[2], row[1]))
     question_list = []
     
     with open(question_path, "r", newline="", encoding="utf-8") as f:
@@ -146,48 +189,96 @@ def fuzzing(t_id, seed_path, question_path, number, tar_model, select_policy, st
         for row in reader:
             question_list.append(row[1])
     
-    file_name = f"{t_id}_{str(int(time.time()))}.csv"
-    
+    results_file = os.path.join(app.config["RUN_DIR"], app.config["REPORT_CSV_FOLDER"], f"{t_id}.csv")
+    results_config = os.path.join(app.config["RUN_DIR"], app.config["REPORT_JSON_FOLDER"], f"{t_id}.json")
     fuzzer = Fuzzer(
         questions=question_list,
         target=tar_model,
         predictor=predictor,
         initial_seed=initial_seed,
         mutate_policy=MutateRandomSinglePolicy(
-            OpenAIMutator(mut_model, temperature=1),
-            concatentate=False,
+            [Generate(), Shorten(), Expand(), Rephrase(), CrossOver()],
+            mutate_model
         ),
         select_policy=select,
-        energy=1,
         max_jailbreak=max_jailbreak,
         max_iteration=max_iteration,
-        result_file=os.path.join(app.config["RUN_DIR"], app.config["REPORT_FOLDER"], file_name),
+        result_file=results_file,
         generate_in_batch=False,
     )
-    
-    num_jailbreak, num_iteration = fuzzer.run()
-    
     with app.app_context():
         test = Test.query.get(t_id)
-        test.t_status = "finish"
-        db.session.commit()
-        
-        new_report = Report(r_file_path=file_name, r_success=num_jailbreak, r_attack=num_iteration, t_id=t_id)
-        db.session.add(new_report)
+        res = {"file_path": os.path.join(app.config["REPORT_CSV_FOLDER"], f"{t_id}.csv")}
+        try:
+            fuzzer.run()
+        except Exception as e:
+            test.t_status = "error"
+            res["status"] = "error"
+            res["error"] = str(e)
+        else:
+            test.t_status = "finish"
+            res["status"] = "success"
+        generate_report(results_config, res)
+        test.t_result_file = f"{t_id}.json"
         db.session.commit()
 
 @test.route("/report", methods=["GET"])
 def report():
     t_id = request.args.get("t_id")
-    report = Test.query.get(t_id).reports[0]
-    return jsonify({
-        "attack": report.r_attack,
-        "success": report.r_success,
-    })
+    test = Test.query.get(t_id)
+    result_path = os.path.join(app.config["RUN_DIR"], app.config["REPORT_JSON_FOLDER"], test.t_result_file)
+    with open(result_path, "r", encoding="utf-8") as f:
+        data = json.load(f)
+    if data.get("status") == "error":
+        res = {"error": data.get("error")}
+    else:  # success
+        res = {
+            "num_vulnerability": data.get("num_rows"),
+            "example": data.get("example")
+        }
+    return jsonify(res)
 
 @test.route("/download", methods=["GET"])
 def download():
     t_id = request.args.get("t_id")
-    report = Test.query.get(t_id).reports[0]
-    file_path = os.path.join(app.config["REPORT_FOLDER"], report.r_file_path)
-    return send_file(file_path, as_attachment=True)
+    test = Test.query.get(t_id)
+    result_file = os.path.join(app.config["RUN_DIR"], app.config["REPORT_JSON_FOLDER"], test.t_result_file)
+    with open(result_file, "r", encoding="utf-8") as f:
+        data = json.load(f)
+    return send_file(data["file_path"], as_attachment=True)
+
+def generate_report(config_path: str, config: Dict[str, str]) -> int:
+    """analyze the contents of the file with path file_path.
+    
+    If the status in config is `success`, the file's line number and other information are analyzed,
+    and the final file configuration information is stored in the file with path config_path
+    
+    Args:
+        config_path (str): path of the file storing the result.
+        config (str): basic status information of the file.
+    
+    Return:
+        (int): 1 means the file is valid, 0 means the file is invalid.
+    """
+    file_path = os.path.join(app.config["RUN_DIR"], config["file_path"])
+    if config["status"] == "success":
+        data = pd.read_csv(file_path)
+        num_rows = data.shape[0]
+        config["num_rows"] = num_rows,
+        if num_rows != 0:
+            config["example"] = {
+                "prompt": data.iloc[0, 1],
+                "response": data.iloc[0, 2]
+            }
+        else:
+            config["example"] = {
+                "prompt": None,
+                "response": None
+            }
+        del data  # Free memory
+    else:
+        os.remove(file_path)
+        del config["file_path"]
+    
+    with open(config_path, "w", newline="", encoding="utf-8") as f:
+        json.dump(config, f, ensure_ascii=False, indent=4)
