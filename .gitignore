@@ -1,4 +1,10 @@
-uploads/
+# User prompt and question
+[0-9]*_[0-9]*.csv
+# User report and profile_pics
+[0-9]*.*
+# Temp file
+temp*.py
+
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

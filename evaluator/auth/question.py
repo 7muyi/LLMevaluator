@@ -23,6 +23,7 @@ def question_list():
             "name": question.q_name,
             "num of row": question.q_num_row,
             "creation time": question.q_create_time.strftime("%I:%M %p %b %d"),
+            "path": question.q_file_path,
         })
     if u_id != 1:
         # *:All users share Admin's files.
@@ -33,6 +34,7 @@ def question_list():
                 "name": question.q_name,
                 "num of row": question.q_num_row,
                 "creation time": question.q_create_time.strftime("%I:%M %p %b %d"),
+                "path": question.q_file_path,
             })
     user = {
         "u_id": user.u_id,
@@ -46,6 +48,12 @@ def download():
     file_path = request.args.get("filename")
     filename = os.path.basename(file_path)
     return send_file(os.path.join(app.config["STATIC_FOLDER"], file_path), as_attachment=True, download_name=filename)
+
+@question.route("/download_question", methods=["GET"])
+def download_question():
+    file_path = request.args.get("filepath")
+    file_path = os.path.join(app.config["QUESTION_FOLDER"], file_path)
+    return send_file(file_path, as_attachment=True, download_name="")
 
 @question.route("/upload", methods=["POST"])
 def upload():
@@ -71,7 +79,7 @@ def upload():
         del df  # *:Release memory.
 
         new_question = Question(
-            q_name=filename,
+            q_name=filename[:-4],
             q_file_path=unique_file_name,
             q_num_row=row_count,
             u_id=u_id,

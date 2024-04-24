@@ -139,7 +139,7 @@ class Fuzzer:
                 self.evaluate(mutated_result)
                 self.update(mutated_result)
         except Exception as e:
-            self.info_logger.info(f"Fuzzingn test undergo an error: {e}")
+            self.info_logger.info(f"Fuzzing test undergo an error: {e}")
             raise e
         else:
             self.info_logger.info("Fuzzing test finish!")
@@ -158,7 +158,8 @@ class Fuzzer:
             if not self.generate_in_batch:
                 response = self.target.generate(message)
                 self.info_logger.debug(f"The response for question {question}: \n{response}")
-                responses.append(response)
+                if response:
+                    responses.append(response)
             else:
                 messages.append(message)
         else:

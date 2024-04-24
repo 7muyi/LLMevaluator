@@ -274,7 +274,7 @@ tr{
             {% endfor %}
         </tbody>
     </table>
-    <div id="display-llm-box" class="template-box">
+    <div id="display-llm-box" class="template-box" style="height: 480px;">
         <label class="template-title">LLM Template</label>
         <div style="margin-top: 65px;">
             <label class="label1">Name</label>
@@ -292,13 +292,23 @@ tr{
         </div>
         
         <div>
+            <label class="label1">Auth method</label>
+            <label class="label2" style="width: 263px;">None</label>
+        </div>
+
+        <div>
             <label class="label1">Access token</label>
-            <label class="label2" style="width: 263px; height: 60px;">24.d1246a223fc06def1b4ca0bf42851d78.2592000.1706589675.282335-43514677</label>
+            <label class="label2" style="width: 263px; height: 60px;">24.d1246a223fc06def1b4ca0bf42851d78.2592000.......</label>
         </div>
         
+        <div>
+            <label class="label1">Kwargs</label>
+            <label class="label2" style="width: 263px;">model:xxx,max_length:xxx</label>
+        </div>
+
         <button onclick="showTemplateBox()">Confirm</button>
     </div>
-    <div id="add-llm-box" class="template-box" style="height: 400px;">
+    <div id="add-llm-box" class="template-box" style="height: 480px;">
         <label class="template-title">Add LLM</label>
         <div style="margin-top: 65px;">
             <label class="label1">Name</label>
@@ -316,9 +326,23 @@ tr{
         </div>
         
         <div>
+            <label class="label1">Authorization</label>
+            <select id="add_l_auth_method" name="l_auth_method" class="label2" style="width:270px; height: 30px">
+                <option value="headers">headers</option>
+                <option value="url">URL</option>
+                <option value="None">No Authorization</option>
+            </select>
+        </div>
+        
+        <div>
             <label class="label1">Access token</label>
             <textarea id="add_l_access_token" class="label2" style="width: 260px; height: 80px; color: #8c95a2;" name="l_access_token">
             </textarea>
+        </div>
+        
+        <div>
+            <label class="label1">kwargs</label>
+            <textarea id="add_l_kwargs" class="label2" style="width: 320px; height: 20px; color: #8c95a2;" name="l_kwargs" spellcheck="false">            </textarea>
         </div>
         
         <div id="warn" style="display: flex; flex-direction: column; margin-left: 0; align-items: center; visibility: hidden;">
@@ -435,8 +459,10 @@ tr{
         formData.append('l_name', document.getElementById('add_l_name').value);
         formData.append('l_url', document.getElementById('add_l_url').value);
         formData.append('l_return_format', document.getElementById('add_l_return_format').value);
+        formData.append('l_auth_method', document.getElementById('add_l_auth_method').value);
         formData.append('l_access_token', document.getElementById('add_l_access_token').value);
-        
+        formData.append('l_kwargs', document.getElementById('add_l_kwargs').value);
+
         $.ajax({
             url: "{{ url_for('llm.add_llm') }}",
             type: 'POST',

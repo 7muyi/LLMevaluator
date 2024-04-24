@@ -23,6 +23,7 @@ def prompt_list():
             "name": prompt.p_name,
             "num of row": prompt.p_num_row,
             "creation time": prompt.p_create_time.strftime("%I:%M %p %b %d"),
+            "path": prompt.p_file_path,
         })
     if u_id != 1:
         # *:All users share Admin's files.
@@ -33,6 +34,7 @@ def prompt_list():
                 "name": prompt.p_name,
                 "num of row": prompt.p_num_row,
                 "creation time": prompt.p_create_time.strftime("%I:%M %p %b %d"),
+                "path": prompt.p_file_path,
             })
 
     user = {
@@ -47,6 +49,12 @@ def download():
     file_path = request.args.get("filename")
     filename = os.path.basename(file_path)
     return send_file(os.path.join(app.config["STATIC_FOLDER"], file_path), as_attachment=True, download_name=filename)
+
+@prompt.route("/download_prompt", methods=["GET"])
+def download_prompt():
+    file_path = request.args.get("filepath")
+    file_path = os.path.join(app.config["PROMPT_FOLDER"], file_path)
+    return send_file(file_path, as_attachment=True, download_name="")
 
 @prompt.route("/upload", methods=["POST"])
 def upload():
@@ -72,7 +80,7 @@ def upload():
         del df  # *:Release memory.
 
         new_prompt = Prompt(
-            p_name=filename,
+            p_name=filename[:-4],
             p_file_path=unique_file_name,
             p_num_row=row_count,
             u_id=u_id,

@@ -156,7 +156,7 @@ def upload_img():
     img = request.files.get("image")
     suffix = img.filename.split(".")[-1]  # Extract the file extension of an image.
     img_name = f"{user.u_id}_{str(int(time.time()))}.{suffix}"
-    img_path = os.path.join(app.config["PROFILE_PIC_FOLDER"], img_name)
+    img_path = os.path.join(app.config["RUN_DIR"], app.config["PROFILE_PIC_FOLDER"], img_name)
     img.save(img_path)
 
     # Download successfully
@@ -164,7 +164,7 @@ def upload_img():
         # If it is not the default path, in other words, it already has a profile pict on the server.
         # Delete old profile pic.
         if user.u_pic_path != "default_pic.png":
-            os.remove(os.path.join(app.config["PROFILE_PIC_FOLDER"], user.u_pic_path))
+            os.remove(os.path.join(app.config["RUN_DIR"], app.config["PROFILE_PIC_FOLDER"], user.u_pic_path))
 
         user.u_pic_path = img_name
         db.session.commit()

@@ -1,4 +1,7 @@
+import json
+import re
 from datetime import datetime
+from typing import Dict
 
 from flask import (Blueprint, jsonify, redirect, render_template, request,
                    url_for)
@@ -50,23 +53,32 @@ def add_llm():
     l_url = request.form["l_url"]
     l_return_format = request.form["l_return_format"]
     l_access_token = request.form["l_access_token"]
-
+    l_kwargs = request.form["l_kwargs"]
+    l_auth_method = request.form["l_auth_method"]
+    
     res = {
         "code": 0,
         "message": "SUCCESS",
         "redirect_url": None,
     }
+    
     if all([l_name, l_url, l_return_format]):
-        new_llm = LLM(
-            l_name=l_name,
-            l_url=l_url,
-            l_return_format=l_return_format,
-            l_access_token=l_access_token,
-            u_id=u_id,
-        )
-        db.session.add(new_llm)
-        db.session.commit()
-        res["redirect_url"] = url_for(endpoint="llm.llm_list", u_id=u_id)
+        if l_auth_method != "None" and not l_access_token:
+            res["code"] = 1
+            res["message"] = "Access token are not allowed to be empty"
+        else:
+            new_llm = LLM(
+                l_name=l_name,
+                l_url=l_url,
+                l_return_format=l_return_format,
+                l_access_token=l_access_token,
+                l_auth_method=l_auth_method,
+                l_kwargs = l_kwargs,
+                u_id=u_id,
+            )
+            db.session.add(new_llm)
+            db.session.commit()
+            res["redirect_url"] = url_for(endpoint="llm.llm_list", u_id=u_id)
     else:
         res["code"] = 1
         res["message"] = "Name, URL, Return format are not allowed to be empty."

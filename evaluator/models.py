@@ -20,6 +20,8 @@ class LLM(db.Model):
     l_url = db.Column(db.String(100), nullable=False)
     l_access_token = db.Column(db.String(255))
     l_return_format = db.Column(db.String(200), nullable=False)
+    l_auth_method = db.Column(db.String(10), default="None")
+    l_kwargs = db.Column(db.String(255))
     l_create_time = db.Column(db.DateTime, default=db.func.now())
     u_id = db.Column(db.Integer, db.ForeignKey("user.u_id"))
 

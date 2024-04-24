@@ -98,6 +98,7 @@ tr{
     position: absolute;
     top: 50%;
     left: 50%;
+    transform: translateX(-50%) translateY(-50%);
     background-color: #ffffff;
     border: 1px solid #1f883d;
     border-radius: 6px;
@@ -154,11 +155,11 @@ tr{
     position: absolute;
     right: 20.5%;
     background-color: #ffffff;
-    transform: translateX(50%);
+    transform: translateX(40%);
     border: 1px solid rgba(31, 35, 41, 0.15);
     border-radius: 6px;
-    height: 60px;
-    width: 80px;
+    height: 90px;
+    width: 110px;
 }
 
 .menu ul {
@@ -169,7 +170,7 @@ tr{
 .menu-li {
     display: flex;
     flex-direction: column;
-    height: 50%;
+    height: 33%;
     width: 100%;
     align-items: left;
     list-style: none;
@@ -219,7 +220,7 @@ tr{
             <tr>
                 {% if questions %}
                     {% for col in questions[0].keys() %}
-                        {% if col != "q_id" %}
+                        {% if col != "q_id" and col != "path" %}
                         <th id="col{{ loop.index0 }}"> {{ col }} </th>
                         {% endif %}
                     {% endfor %}
@@ -231,7 +232,7 @@ tr{
             {% for question in questions %}
             <tr>
                 {% for key, value in question.items() %}
-                    {% if key != "q_id" %}
+                    {% if key != "q_id" and key != "path" %}
                     <th style="vertical-align: middle;">
                         <div style="display: flex; flex-direction: row; vertical-align: middle;">
                             {% if loop.index0 == 1 %}
@@ -247,6 +248,12 @@ tr{
                         <img src="{{ url_for('static', filename='other.png') }}" style="width: 20px; margin-right: 0;">
                         <div class="menu">
                             <ul style="height: 100%;">
+                                <li class="menu-li">
+                                    <a class="menu-content" href="{{ url_for('question.download_question', filepath=question.path) }}" download="{{ question.name }}.csv" style="text-decoration: none;">
+                                        <img src="{{ url_for('static', filename='download.png') }}">
+                                        <span>Download</span>
+                                    </a>
+                                </li>
                                 <li class="menu-li" onclick="var form = document.getElementById('form-edit-box'); form.style.visibility='visible';form.querySelector('#q_id').value={{ question.q_id }}; form.querySelector('#q_name').value='{{ question.name }}';form.querySelector('#q_name').placeholder='{{ question.name }}'">
                                     <div class="menu-content">
                                         <img src="{{ url_for('static', filename='edit_grey.png') }}">

@@ -140,7 +140,7 @@ tr{
 
 .template-box button {
     position: absolute;
-    bottom: 3%;
+    bottom: 2%;
     right: 50%;
     transform: translateX(50%);
     cursor: pointer;
@@ -375,15 +375,23 @@ tr{
             <label class="label2" id="report-vulnerability" style="width: 150px; line-height: 30px;"></label>
         </div>
         
-        <div style="display: flex; flex-direction: column;">
-            <label class="label1" style="align-self: flex-start;">Example</label>
-            <div style="display: flex; align-self: flex-start; flex-direction: column; margin: 5px 0 0 0;">
-                <label class="label1" style="align-self: flex-start; width: 150px; line-height: 30px;">prompt</label>
-                <label class="label2" id="example-prompt" style="height: auto; width:395px;"></label>
+        <div id="example" style="margin: 0 0 0 0">
+            <div style="display: flex; flex-direction: column;">
+                <label class="label1" style="align-self: flex-start;">Example</label>
+                <div style="display: flex; align-self: flex-start; flex-direction: column; margin: 5px 0 0 0;">
+                    <label class="label1" style="align-self: flex-start; width: 150px; line-height: 30px;">prompt</label>
+                    <textarea class="label2" id="example-prompt" style="height: 170px; width:395px; overflow: auto;"></textarea>
+                </div>
+                <div style="display: flex; align-self: flex-start; flex-direction: column; margin: 5px 0 0 0;">
+                    <label class="label1" style="align-self: flex-start; width: 150px; line-height: 30px;">response</label>
+                    <textarea class="label2" id="example-response" style="height: 170px; width: 395px; overflow: auto   ;"></textarea>
+                </div>
             </div>
-            <div style="display: flex; align-self: flex-start; flex-direction: column; margin: 5px 0 0 0;">
-                <label class="label1" style="align-self: flex-start; width: 150px; line-height: 30px;">response</label>
-                <label class="label2" id="example-response" style="height: auto; width: 395px;"></label>
+        </div>
+        
+        <div id="no_example" style="margin: 0 0 0 0;">
+            <div style="display: flex; flex-direction: column;">
+                <label class="label1" style="align-self: flex-start; color: red;">No vulnerabilities detected</label>
             </div>
         </div>
         
@@ -394,6 +402,7 @@ tr{
             <button type="button" style="right: 32%" onclick="showReportBox()">Cancel</button>
         </div>
     </div>
+    
     <div id="error-box" class="template-box" style="width: 450px">
         <label class="template-title">Error detail</label>
         
@@ -452,24 +461,45 @@ tr{
         }
     });
     
+    // function showMenu(clicked) {
+    //     var div_op_list = document.querySelectorAll(".other-op");
+    //     div_op_list.forEach(function(div_op) {
+    //         var menu = div_op.getElementsByClassName("menu")[0];
+    //         if (menu) {
+    //             if(div_op != clicked) {
+    //                 menu.style.visibility = "hidden";
+    //             }else{
+    //                 if (menu.style.visibility == "hidden") {
+    //                     menu.style.visibility = "visible";
+    //                 } else{
+    //                     menu.style.visibility = "hidden";
+    //                 }
+    //             }
+    //         }
+    //     })
+    // };
     function showMenu(clicked) {
         var div_op_list = document.querySelectorAll(".other-op");
+        var clickedMenu = clicked.getElementsByClassName("menu")[0];
+        
+        if (clickedMenu) {
+            if (clickedMenu.style.visibility === "hidden") {
+                clickedMenu.style.visibility = "visible";
+            } else {
+                clickedMenu.style.visibility = "hidden";
+            }
+        }
+        
         div_op_list.forEach(function(div_op) {
-            var menu = div_op.getElementsByClassName("menu")[0];
-            if (menu) {
-                if(div_op != clicked) {
+            if (div_op !== clicked) {
+                var menu = div_op.getElementsByClassName("menu")[0];
+                if (menu) {
                     menu.style.visibility = "hidden";
-                }else{
-                    if (menu.style.visibility == "hidden") {
-                        menu.style.visibility = "visible";
-                    } else{
-                        menu.style.visibility = "hidden";
-                    }
                 }
             }
-        })
+        });
     };
-    
+
     function showAddBox() {
         var add_box = document.getElementById('add-test-box')
         if (add_box.style.visibility == 'hidden') {
@@ -491,10 +521,17 @@ tr{
                 success: function(response) {
                     var label1 = document.getElementById('report-vulnerability');
                     label1.innerText = response.num_vulnerability;
-                    var label2 = document.getElementById('example-prompt');
-                    label2.innerText = response.example.prompt;
-                    var label3 = document.getElementById('example-response');
-                    label3.innerText = response.example.response;
+                    if(response.num_vulnerability == "0"){
+                        document.getElementById('no_example').style.display = "block"
+                        document.getElementById('example').style.display = 'none';
+                    } else {
+                        document.getElementById('example').style.display = "block"
+                        document.getElementById('no_example').style.display = 'none';
+                        var label2 = document.getElementById('example-prompt');
+                        label2.value = response.example.prompt;
+                        var label3 = document.getElementById('example-response');
+                        label3.value = response.example.response;
+                    }
                 }
             });
             var link = document.getElementById('download');

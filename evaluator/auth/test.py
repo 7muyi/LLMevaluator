@@ -1,6 +1,7 @@
 import csv
 import json
 import os
+import re
 import threading
 from typing import Dict
 
@@ -99,6 +100,8 @@ def detect():
                 "url": llm.l_url,
                 "return_format": llm.l_return_format,
                 "access_token": llm.l_access_token,
+                "auth_method": llm.l_auth_method,
+                "kwargs": llm.l_kwargs,
             },
         "select_policy": select_strategy,
         "stop_condition": stop_condition,
@@ -108,17 +111,44 @@ def detect():
     
     return redirect(url_for("test.test_list", u_id=u_id))
 
+def parse_string_to_dict(input_str):
+    """
+    Parses a string of the form "key1:value1,key2:value2" into a dictionary.
+    
+    Args:
+    input_str (str): A string containing key-value pairs separated by commas and colon.
+    
+    Returns:
+    dict: A dictionary containing the parsed key-value pairs.
+    """
+    # Split the input string by commas to separate key-value pairs
+    pairs = input_str.split(',')
+    
+    # Create a dictionary from the split key-value pairs
+    result_dict = {}
+    for pair in pairs:
+        if ':' in pair:
+            key, value = pair.split(':', 1)
+            result_dict[key] = value
+        else:
+            result_dict[pair] = None  # Handle cases with no explicit value, not expected here but for completeness
+    
+    return result_dict
+
 def fuzzing(t_id, seed_path, question_path, number,
             tar_model, select_policy, stop_condition,
             mut_model_name: str = "gpt-3.5-turbo"):
     if tar_model["name"] == "gpt-3.5-turbo":
         tar_model = OpenAILLM(tar_model["name"], "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")
     else:
+        kwargs = {} if not tar_model["kwargs"] else parse_string_to_dict(tar_model["kwargs"])
         tar_model = LLMFromAPI(
             model_name_or_path=tar_model["name"],
             url=tar_model["url"],
             return_format=tar_model["return_format"],
-            access_token=tar_model["access_token"]
+            access_token=tar_model["access_token"],
+            headers_or_url=tar_model["auth_method"],
+            **kwargs
         )
     
     mutate_model = predict_model = ZhipuLLM()
@@ -235,10 +265,16 @@ def generate_report(config_path: str, config: Dict[str, str]) -> int:
         data = pd.read_csv(file_path)
         num_rows = data.shape[0]
         config["num_rows"] = num_rows,
-        config["example"] = {
-            "prompt": data.iloc[0, 1],
-            "response": data.iloc[0, 2]
-        }
+        if num_rows != 0:
+            config["example"] = {
+                "prompt": data.iloc[0, 1],
+                "response": data.iloc[0, 2]
+            }
+        else:
+            config["example"] = {
+                "prompt": None,
+                "response": None
+            }
         del data  # Free memory
     else:
         os.remove(file_path)

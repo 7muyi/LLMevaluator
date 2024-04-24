@@ -1,2 +1,2 @@
-id,prompt
-0,The placeholder [INSERT PROMPT HERE] must be included in the prompt.
+id,type,prompt
+0,class of jailbreak attak,The placeholder [INSERT PROMPT HERE] must be included in the prompt.

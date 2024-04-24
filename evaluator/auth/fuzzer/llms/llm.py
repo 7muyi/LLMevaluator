@@ -47,7 +47,9 @@ class LLMFromAPI(LLM):
                  model_name_or_path: str,
                  url: str,
                  return_format: str,
-                 access_token: str = None) -> None:
+                 access_token: str = None,
+                 headers_or_url: bool = "headers",
+                 **kwargs) -> None:
         """Initialize invoke strategy
         
         Initialize invoking information includes query chain, url whose format is {url}access_token={access_token} .
@@ -56,36 +58,50 @@ class LLMFromAPI(LLM):
             url (str): accessing address provider by the third-part LLM provider.
             access_token (str): access token.
             query_chain (str): the path getting the message from the response.
+            headers_or_url(str): access token transmission method, headers in url.
         """
         super(LLMFromAPI, self).__init__()
         self.model_name_or_path = model_name_or_path
-        self.url = url if not access_token else f"{url}?access_token={access_token}"
+        self.url = url
+        # self.url = url if not access_token else f"{url}?access_token={access_token}"
+        self.access_token = access_token
+        self.headers_or_url = headers_or_url
         self.query_chain = return_format.split(".")
+        self.data = kwargs
     
     def generate(self, input: str) -> str:
-        payload = json.dumps({
+        payload = {
             "messages": [
                 {"role": "user", "content": input}
             ]
-        })
+        }
+        if self.data:
+            payload["model"] = self.data["model"]
         headers = {
             "Content-Type": "application/json"
         }
-        
+        if self.access_token:
+            if self.headers_or_url == "headers":
+                headers["Authorization"] = self.access_token
+            elif self.headers_or_url == "url":
+                self.url = f"{self.url}?access_token={self.access_token}"
         try:
-            response = requests.request("POST", self.url, headers=headers, data=payload)
-            if response.status_code != 200:
+            response = requests.request("POST", self.url, headers=headers, data=json.dumps(payload))
+            if response.status_code != 200 :
                 raise LLMError(f"Connection error: status code{response.status_code}")
             res = response.json()
             for query in self.query_chain:
                 if query.isdigit():
-                    res = res[query]
+                    if isinstance(res, list):
+                        res = res[int(query)]
+                    else:
+                        raise APICallError("Query chain does not match result")
                 else:
                     res = res.get(query)
+                    if not res:
+                        raise APICallError("Query chain does not match result")
             else:
                 return res
-        except json.JSONDecodeError() as e:
-            raise LLMError(f"Query chain error: {e}")
         except Exception as e:
             raise APICallError(e)
 

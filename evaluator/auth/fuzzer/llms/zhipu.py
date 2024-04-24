@@ -11,7 +11,7 @@ class ZhipuLLM(LLM):
     
     def generate(self, input: str) -> str:
         response = self.client.chat.completions.create(
-            model="chatglm_pro",
+            model="glm-4",
             messages=[
                 {"role": "user", "content": input}
             ],
